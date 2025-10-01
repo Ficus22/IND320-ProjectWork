@@ -3,14 +3,13 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.title("📈 Visualisations Météo - Plotly")
+st.title("📈 Visualisations Météo")
 
 # ==============================
 # Chargement des données
 # ==============================
 @st.cache_data
 def load_data():
-    # Chemin relatif (fonctionne en local ET sur Streamlit Cloud)
     csv_path = "data/open-meteo-subset.csv"
     df = pd.read_csv(csv_path)
     df['time'] = pd.to_datetime(df['time'])
@@ -33,18 +32,31 @@ try:
     # Sélection d'une variable
     selected_col = st.selectbox("Choisir une variable :", numeric_cols + ["Toutes les colonnes"])
 
-    # Liste des mois uniques
+    # Liste des mois uniques et leurs noms
+    month_names = {
+        1: "Janvier", 2: "Février", 3: "Mars", 4: "Avril",
+        5: "Mai", 6: "Juin", 7: "Juillet", 8: "Août",
+        9: "Septembre", 10: "Octobre", 11: "Novembre", 12: "Décembre"
+    }
     months = sorted(df['time'].dt.month.unique())
+    month_labels = [month_names[m] for m in months]
 
-    # Sélection d'une plage de mois
-    month_range = st.select_slider(
+    # Sélection d'une plage de mois par noms
+    month_range_labels = st.select_slider(
         "Sélectionnez une plage de mois",
-        options=months,
-        value=(months[0], months[0])  # par défaut : premier mois
+        options=month_labels,
+        value=(month_labels[0], month_labels[0])  # par défaut : premier mois
     )
 
-    # Filtrage selon la plage choisie
+    # Conversion des noms en chiffres
+    month_range = [
+        [k for k,v in month_names.items() if v == month_range_labels[0]][0],
+        [k for k,v in month_names.items() if v == month_range_labels[1]][0]
+    ]
+
+    # Filtrage
     filtered_df = df[df['time'].dt.month.between(month_range[0], month_range[1])]
+
 
     # ==============================
     # Affichage du graphique

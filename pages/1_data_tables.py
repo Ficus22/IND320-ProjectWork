@@ -1,6 +1,3 @@
-"""
-title: Tableau des Données
-"""
 import streamlit as st
 import pandas as pd
 import os
