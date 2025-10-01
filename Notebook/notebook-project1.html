@@ -7519,35 +7519,75 @@ a.anchor-link {
 <h1 id="IND320-Project-Log:-Weather-Data-Analysis"><strong>IND320 Project Log: Weather Data Analysis</strong><a class="anchor-link" href="#IND320-Project-Log:-Weather-Data-Analysis">¶</a></h1><p><strong>Esteban Carrasco</strong><br/>
 <em>October 01, 2025</em></p>
 <hr/>
-<h2 id="1.-Project-Overview"><strong>1. Project Overview</strong><a class="anchor-link" href="#1.-Project-Overview">¶</a></h2><p>This project aimed to analyze hourly meteorological data (temperature, precipitation, wind speed/direction) from January 2020 using <strong>Python (Pandas, Matplotlib)</strong> and deploy an interactive dashboard with <strong>Streamlit</strong>. The dataset, provided in CSV format, required preprocessing for temporal analysis and multi-scale visualization due to divergent units (°C, mm, m/s).</p>
+<h2 id="1.-Project-Overview"><strong>1. Project Overview</strong><a class="anchor-link" href="#1.-Project-Overview">¶</a></h2><p>This project aimed to analyze hourly meteorological data (temperature, precipitation, wind speed/direction) from January 2020 using Python (Pandas, Matplotlib) and deploy an interactive dashboard with Streamlit. The dataset, provided in CSV format, required preprocessing for temporal analysis and multi-scale visualization due to divergent units (°C, mm, m/s).</p>
 <p>Key objectives:</p>
 <ul>
-<li><strong>Data Exploration</strong>: Understand patterns in weather variables.</li>
-<li><strong>Visualization</strong>: Create clear, scalable plots for variables with different magnitudes.</li>
-<li><strong>Interactivity</strong>: Build a Streamlit app with dynamic filters (month/column selection).</li>
-<li><strong>Documentation</strong>: Maintain reproducible code with comments and a development log.</li>
+<li><strong>Data Exploration</strong> : Understand patterns in weather variables.</li>
+<li><strong>Visualization</strong> : Create clear, scalable plots for variables with different magnitudes.</li>
+<li><strong>Interactivity</strong> : Build a Streamlit app with dynamic filters (month/column selection).</li>
+<li><strong>Documentation</strong> : Maintain reproducible code with comments and a development log.</li>
 </ul>
 <hr/>
-<h2 id="2.-Development-Process"><strong>2. Development Process</strong><a class="anchor-link" href="#2.-Development-Process">¶</a></h2><h3 id="2.1-LOG"><strong>2.1 LOG</strong><a class="anchor-link" href="#2.1-LOG">¶</a></h3><h4 id="Data-Preparation:"><strong>Data Preparation</strong>:<a class="anchor-link" href="#Data-Preparation:">¶</a></h4><ul>
-<li>Loaded the dataset <code>open-meteo-subset.csv</code> from the <code>data/</code> folder.</li>
-<li>Converted the <code>time</code> column to datetime format and set it as the index for temporal analysis.</li>
-<li>Explored the dataset with <code>head()</code> and <code>describe()</code> to understand its structure and statistics.</li>
+<h2 id="2.-Development-Process"><strong>2. Development Process</strong><a class="anchor-link" href="#2.-Development-Process">¶</a></h2><h3 id="2.1-Log:-Weather-Data-Analysis-(IND320)"><strong>2.1 Log: Weather Data Analysis (IND320)</strong><a class="anchor-link" href="#2.1-Log:-Weather-Data-Analysis-(IND320)">¶</a></h3><p><strong>Objective</strong> :
+This project aimed to analyze hourly meteorological data from 2020, focusing on <strong>temperature, precipitation, and wind patterns</strong>. The goal was to create reproducible visualizations and an interactive Streamlit dashboard for exploratory data analysis.</p>
+<h4 id="A--Data-Preparation"><strong>A- Data Preparation</strong><a class="anchor-link" href="#A--Data-Preparation">¶</a></h4><p>The dataset (<code>open-meteo-subset.csv</code>) was loaded using Pandas, with the <code>time</code> column converted to datetime for temporal indexing. Initial exploration with <code>df.head()</code> and <code>df.describe()</code> revealed:</p>
+<ul>
+<li><strong>Temperature</strong> : Ranged from <strong>-19.3°C to 19.9°C</strong> (mean: -0.4°C), showing strong seasonality.</li>
+<li><strong>Precipitation</strong> : Sparse but extreme events (max: 5.8 mm/hour).</li>
+<li><strong>Wind</strong> : Gusts up to <strong>28.7 m/s</strong>, with directions predominantly from the southwest (mean: 212°).</li>
 </ul>
-<h4 id="Visualization:"><strong>Visualization</strong>:<a class="anchor-link" href="#Visualization:">¶</a></h4><ul>
-<li>Created individual plots for temperature, precipitation, wind speed, wind gusts, and wind direction using Matplotlib.</li>
-<li>Designed a grouped plot to visualize multiple variables together, including precipitation as bars for better comparison (eight times their values to increase lisibility).</li>
-<li>Generated a windrose plot using the <code>windrose</code> library to analyze wind direction and speed distribution.</li>
+<p><strong>Challenge</strong> : The variables had divergent units (°C, mm, m/s), requiring careful scaling for combined plots. For example, precipitation values were multiplied by 8 to match the visual scale of other variables.</p>
+<h4 id="B--Visualization-Design"><strong>B- Visualization Design</strong><a class="anchor-link" href="#B--Visualization-Design">¶</a></h4><p><strong>Individual Plots</strong> :
+Created line charts for each variable using Matplotlib, with consistent formatting (grid, labels, legends). Temperature showed clear seasonal trends, while wind speed/gusts were more volatile.</p>
+<p><strong>Grouped Plot</strong> :
+Combined all variables into one plot (except wind direction), scaling precipitation bars by 8× for visibility. This was critical to avoid overlapping lines.</p>
+<p><strong>Windrose Plot</strong>:</p>
+<ul>
+<li>Used the <code>windrose</code> library to visualize wind direction/speed distribution.</li>
+<li><strong>Technical Hurdle</strong> : The library required wind directions in meteorological degrees (0° = north, 90° = east), which matched our data.</li>
+<li><strong>Outcome</strong>: The plot revealed dominant southwesterly winds, correlating with Norway’s prevailing wind patterns.</li>
 </ul>
-<h4 id="Interactive-Dashboard:"><strong>Interactive Dashboard</strong>:<a class="anchor-link" href="#Interactive-Dashboard:">¶</a></h4><ul>
-<li>Developed a Streamlit app (<code>app.py</code>) with the following pages:<ul>
-<li><strong>Data Tables</strong>: Displayed raw data with filtering options.</li>
-<li><strong>Plots</strong>: Showed interactive visualizations for weather variables.</li>
-<li><strong>About</strong>: Provided project details and methodology.</li>
+<h4 id="C--Streamlit-Dashboard"><strong>C- Streamlit Dashboard</strong><a class="anchor-link" href="#C--Streamlit-Dashboard">¶</a></h4><p><strong>Implementation</strong>:</p>
+<ul>
+<li>Structured the app into 4 pages (Home, Data Tables, Plots, About).</li>
+<li>Added interactive controls:<ul>
+<li><code>st.selectbox</code> to choose variables (single or all).</li>
+<li><code>st.slider</code> to filter by month (default: January to March).</li>
+<li><code>st.line_chart</code> for the first month’s data, with one line per column.</li>
 </ul>
 </li>
-<li>Deployed the app on Streamlit Cloud: <a href="https://ind320-projectwork-esteban-carrasco.streamlit.app">Live Streamlit App</a>.</li>
 </ul>
-<h3 id="2.2-AI-Assistance:"><strong>2.2 AI Assistance</strong>:<a class="anchor-link" href="#2.2-AI-Assistance:">¶</a></h3><p>Used <em>Le Chat</em> (<a href="https://mistral.ai/">Mistral AI</a>) for advanced visualizations and translating the project into English.</p>
+<p><strong>User Experience</strong>:</p>
+<ul>
+<li>Cached the data loading (<code>@st.cache_data</code>) to improve performance.</li>
+<li>Used <code>st.dataframe</code> for raw data inspection, enabling sorting and filtering.</li>
+</ul>
+<h4 id="D--Challenges-and-Solutions"><strong>D- Challenges and Solutions</strong><a class="anchor-link" href="#D--Challenges-and-Solutions">¶</a></h4><table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Missing values in wind data</td>
+<td>Dropped 2 rows (&lt;0.1% of data).</td>
+</tr>
+<tr>
+<td>Slow Streamlit rendering</td>
+<td>Optimized with</td>
+</tr>
+<tr>
+<td>Windrose legend clarity</td>
+<td>Added manual annotations for speed ranges.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Collaboration</strong>:
+Discussed plot designs with classmates, leading to the idea.</p>
+<hr/>
+<h3 id="2.2-AI-Assistance:"><strong>2.2 AI Assistance</strong>:<a class="anchor-link" href="#2.2-AI-Assistance:">¶</a></h3><p><em>Le Chat</em> (<a href="https://mistral.ai/">Mistral AI</a>) helped optimize the Pandas code for datetime conversion, provided a template for the windrose plot, saving time on trial-and-error and helped translate the project into english.</p>
 <hr/>
 <h2 id="3.-Jupyter-Notebook-Phase"><strong>3. Jupyter Notebook Phase</strong><a class="anchor-link" href="#3.-Jupyter-Notebook-Phase">¶</a></h2>
 </div>
