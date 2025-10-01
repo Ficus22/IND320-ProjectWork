@@ -2,6 +2,21 @@
 import streamlit as st
 
 st.set_page_config(layout="wide", page_title="Dashboard Météo")
+
+# =========================
+# Sidebar
+# =========================
+st.sidebar.title("🧭 Navigation")
+st.sidebar.write("Choisissez une page ci-dessous :")
+
+# (le menu natif multipage s’affichera juste en dessous)
+# Tu peux aussi ajouter d'autres éléments si tu veux
+st.sidebar.markdown("---")
+st.sidebar.info("Projet IND320 - Données météo")
+
+# =========================
+# Page principale
+# =========================
 st.title("🌦️ Dashboard Météo - IND320")
 st.markdown("""
 Bienvenue sur le dashboard d'analyse des données météorologiques de 2020.
