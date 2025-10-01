@@ -32,6 +32,6 @@ st.dataframe(
 )
 
 # Chart
-st.subheader("Temperature for the First Month")
+st.subheader("Temperature for January 2020")
 first_month = df[df['time'].dt.month == 1]
 st.line_chart(first_month.set_index('time')['temperature_2m (°C)'])

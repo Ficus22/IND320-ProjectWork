@@ -42,7 +42,7 @@ try:
     month_range_labels = st.select_slider(
         "Select a month range",
         options=month_labels,
-        value=(month_labels[0], month_labels[0])  # default: first month
+        value=(month_labels[0], month_labels[2])  # default: January to March
     )
 
     # Convert month names back to numbers
