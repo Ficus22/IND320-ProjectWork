@@ -12,10 +12,10 @@ Bienvenue sur le dashboard d'analyse des données météorologiques de 2020.
 - Filtres par mois pour une analyse ciblée
 """)
 
-st.sidebar.title("Navigation")
+#st.sidebar.title("Navigation")
 #st.sidebar.page_link("app.py", label="Accueil")
 #st.sidebar.page_link("pages/1_data_tables.py", label="Tableau de données")
 #st.sidebar.page_link("pages/2_plots.py", label="Visualisations")
-st.sidebar.page_link("pages/3_about.py", label="À propos")
+#st.sidebar.page_link("pages/3_about.py", label="À propos")
 
 st.image("https://kommunikasjon.ntb.no/data/images/00148/dee9f88e-8f69-42ee-aae0-ec20be9f2b7b.png", width=300) #NMBU image
