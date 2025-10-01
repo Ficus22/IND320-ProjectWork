@@ -1,5 +1,5 @@
 import streamlit as st
-
+import pandas as pd
 
 st.title("Mon projet IND320 🚀")
 st.write("Bienvenue dans mon app Streamlit hébergée sur streamlit.app")
