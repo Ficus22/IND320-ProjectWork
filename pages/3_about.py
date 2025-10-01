@@ -1,27 +1,26 @@
 # streamlit_app/pages/about.py
 import streamlit as st
 
-st.title("🔍 À propos")
+st.title("🔍 About")
 st.markdown("""
-## Projet IND320 - Analyse de données météorologiques
+## IND320 Project - Weather Data Analysis
 
-**Auteur** : Esteban Carrasco
+**Author**: Esteban Carrasco
 
-**Objectifs** :
-- Analyser les données météorologiques horaires de janvier 2020
-- Créer des visualisations interactives avec Streamlit
-- Intégrer des analyses spécifiques sur les directions du vent
+**Objectives**:
+- Analyze hourly weather data from January 2020
+- Create interactive visualizations using Streamlit
+- Include specific analyses of wind directions
 
-**Technologies utilisées** :
-- Python (Pandas, Matplotlib, NumPy)
-- Streamlit pour le dashboard interactif
-- AgGrid pour les tableaux avancés
+**Technologies Used**:
+- Python (Pandas, Plotly, NumPy)
+- Streamlit for the interactive dashboard
 
-**Liens** :
-- [Code source GitHub](https://github.com/ton-pseudo/IND320-Streamlit-esteban)
-- [Données source](https://open-meteo.com/)
+**Links**:
+- [GitHub Source Code](https://github.com/Ficus22/IND320-ProjectWork)
 
-**Remerciements** :
-- À l'équipe enseignante pour son accompagnement
-- À Le Chat (Mistral AI) pour son aide sur les visualisations avancées
+**AI Usage**:
+Chat ([Mistral AI](https://mistral.ai/)) was used to assist with advanced visualizations and to translate the project into English.
+
+**Note**: This project is a demonstration of data analysis and visualization skills and is not intended for commercial use. For more details, please refer to the associated Jupyter Notebook.
 """)

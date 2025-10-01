@@ -3,10 +3,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.title("📈 Visualisations Météo")
+st.title("📈 Weather Visualizations")
 
 # ==============================
-# Chargement des données
+# Load Data
 # ==============================
 @st.cache_data
 def load_data():
@@ -18,7 +18,6 @@ def load_data():
 try:
     df = load_data()
 
-    # Liste des colonnes numériques à tracer
     numeric_cols = [
         "temperature_2m (°C)",
         "precipitation (mm)",
@@ -27,46 +26,43 @@ try:
     ]
 
     # ==============================
-    # Widgets de sélection utilisateur
+    # User selection widgets
     # ==============================
-    # Sélection d'une variable
-    selected_col = st.selectbox("Choisir une variable :", numeric_cols + ["Toutes les colonnes"])
+    selected_col = st.selectbox("Choose a variable:", numeric_cols + ["All columns"])
 
-    # Liste des mois uniques et leurs noms
     month_names = {
-        1: "Janvier", 2: "Février", 3: "Mars", 4: "Avril",
-        5: "Mai", 6: "Juin", 7: "Juillet", 8: "Août",
-        9: "Septembre", 10: "Octobre", 11: "Novembre", 12: "Décembre"
+        1: "January", 2: "February", 3: "March", 4: "April",
+        5: "May", 6: "June", 7: "July", 8: "August",
+        9: "September", 10: "October", 11: "November", 12: "December"
     }
     months = sorted(df['time'].dt.month.unique())
     month_labels = [month_names[m] for m in months]
 
-    # Sélection d'une plage de mois par noms
+    # Select a range of months by name
     month_range_labels = st.select_slider(
-        "Sélectionnez une plage de mois",
+        "Select a month range",
         options=month_labels,
-        value=(month_labels[0], month_labels[0])  # par défaut : premier mois
+        value=(month_labels[0], month_labels[0])  # default: first month
     )
 
-    # Conversion des noms en chiffres
+    # Convert month names back to numbers
     month_range = [
         [k for k,v in month_names.items() if v == month_range_labels[0]][0],
         [k for k,v in month_names.items() if v == month_range_labels[1]][0]
     ]
 
-    # Filtrage
+    # Filter data by selected month range
     filtered_df = df[df['time'].dt.month.between(month_range[0], month_range[1])]
 
-
     # ==============================
-    # Affichage du graphique
+    # Display line chart
     # ==============================
-    if selected_col == "Toutes les colonnes":
+    if selected_col == "All columns":
         fig = px.line(
             filtered_df,
             x="time",
             y=numeric_cols,
-            title=f"Évolution des variables météo ({month_range[0]} → {month_range[1]})"
+            title=f"Weather variables over time ({month_range[0]} → {month_range[1]})"
         )
     else:
         fig = px.line(
@@ -77,26 +73,27 @@ try:
         )
 
     fig.update_layout(
-        xaxis_title="Temps",
-        yaxis_title="Valeurs",
+        xaxis_title="Time",
+        yaxis_title="Values",
         legend_title="Variables"
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
+
     # ==============================
-    # Graphique polaire pour direction du vent
+    # Polar plot for wind direction
     # ==============================
-    st.subheader("🌪️ Direction et intensité du vent")
+    st.subheader("🌪️ Wind Direction and Intensity")
     fig_polar = px.scatter_polar(
         filtered_df,
         r="wind_speed_10m (m/s)",
         theta="wind_direction_10m (°)",
         size="wind_speed_10m (m/s)",
         color="wind_speed_10m (m/s)",
-        title="Rose des vents (polaire)"
+        title="Wind Rose (Polar)"
     )
     st.plotly_chart(fig_polar, use_container_width=True)
 
 except Exception as e:
-    st.error(f"Erreur lors du chargement ou du tracé : {e}")
+    st.error(f"Error loading data or generating plots: {e}")

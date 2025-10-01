@@ -2,17 +2,16 @@ import streamlit as st
 import pandas as pd
 import os
 
-st.title("📊 Tableau des Données Météo")
+st.title("📊 Weather Data Table")
 
 @st.cache_data
 def load_data():
-    # Chemin absolu dans Streamlit Cloud
     csv_path = "data/open-meteo-subset.csv"
 
-    # Vérifie si le fichier existe
+    # Check if the file exists
     if not os.path.exists(csv_path):
-        st.error(f"Fichier non trouvé à : {csv_path}")
-        st.stop()  # Arrête l'exécution si le fichier est manquant
+        st.error(f"File not found at: {csv_path}")
+        st.stop()  # Stop execution if the file is missing
 
     df = pd.read_csv(csv_path)
     df['time'] = pd.to_datetime(df['time'])
@@ -20,19 +19,19 @@ def load_data():
 
 df = load_data()
 
-# Tableau interactif natif
+# Native interactive table
 st.dataframe(
     df,
     height=500,
     column_config={
-        "time": "Date/Heure",
-        "temperature_2m (°C)": "Température (°C)",
-        "precipitation (mm)": "Précipitations (mm)",
+        "time": "Date/Time",
+        "temperature_2m (°C)": "Temperature (°C)",
+        "precipitation (mm)": "Precipitation (mm)",
     },
     hide_index=True,
 )
 
-# Graphique
-st.subheader("Température du Premier Mois")
+# Chart
+st.subheader("Temperature for the First Month")
 first_month = df[df['time'].dt.month == 1]
 st.line_chart(first_month.set_index('time')['temperature_2m (°C)'])
