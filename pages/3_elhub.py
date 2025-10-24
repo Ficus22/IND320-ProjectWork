@@ -35,7 +35,9 @@ price_areas = ["ALL"] + list(df["price_area"].unique())
 price_area = st.selectbox("Select Price Area", price_areas)
 
 # Production groups selection
-selected_groups = st.multiselect("Select Production Groups", df["production_group"].unique())
+production_groups = df["production_group"].dropna().unique()
+selected_groups = st.multiselect("Select Production Groups", production_groups)
+
 
 # -------------------------
 # Month range selection using names
