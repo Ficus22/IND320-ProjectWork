@@ -25,13 +25,19 @@ st.markdown("Analyze monthly production trends and energy distribution by produc
 # -------------------------
 st.header("Monthly Production Trends")
 
-# Filters
-price_area = st.selectbox("Select Price Area", df["price_area"].unique())
+# Add 'ALL' option for price area
+price_areas = ["ALL"] + list(df["price_area"].unique())
+price_area = st.selectbox("Select Price Area", price_areas)
+
 selected_groups = st.multiselect("Select Production Groups", df["production_group"].unique())
 selected_month = st.selectbox("Select Month", range(1, 13))
 
 # Filter data
-df_filtered = df[df["price_area"] == price_area]
+if price_area == "ALL":
+    df_filtered = df.copy()
+else:
+    df_filtered = df[df["price_area"] == price_area]
+
 df_month = df_filtered[df_filtered["start_time"].dt.month == selected_month]
 df_month_group = df_month[df_month["production_group"].isin(selected_groups)]
 
