@@ -1,4 +1,4 @@
-# streamlit_app/pages/about.py
+# streamlit_app/pages/4_about.py
 import streamlit as st
 
 st.title("🔍 About")
