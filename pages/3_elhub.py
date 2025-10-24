@@ -22,7 +22,7 @@ df = pd.DataFrame(data)
 if not pd.api.types.is_datetime64_any_dtype(df["start_time"]):
     df["start_time"] = pd.to_datetime(df["start_time"])
 
-st.title("Energy Production in 2022")
+st.title("⚡Energy Production in 2022")
 st.markdown("Analyze monthly production trends and energy distribution by production group.")
 
 # -------------------------
