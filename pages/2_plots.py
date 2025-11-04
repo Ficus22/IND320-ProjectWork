@@ -107,7 +107,7 @@ try:
             # Use radius to represent the mean wind speed in each direction bin
             radius=alt.Radius(
                 "mean(wind_speed_10m (m/s)):Q",
-                scale=alt.Scale(range=[0,10])  # Controls rose size
+                scale=alt.Scale(range=[0,50])  # Controls rose size
             ),
 
             # Color encodes mean wind speed
@@ -125,7 +125,7 @@ try:
             )
         )
         # Control each small plot’s size
-        .properties(width=130, height=130)
+        .properties(width=80, height=80)
 
         # Reduce spacing between small multiples
         .configure_facet(spacing=10)
