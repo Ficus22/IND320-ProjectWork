@@ -7,7 +7,7 @@ from pymongo import MongoClient
 # -------------------------
 # MongoDB connection
 # -------------------------
-MONGO_URI = "${{secrets.MONGO_URI }}"
+MONGO_URI = st.secrets["MONGO_URI"]
 client = MongoClient(MONGO_URI)
 db = client["elhub_data"]
 collection = db["production_data"]
