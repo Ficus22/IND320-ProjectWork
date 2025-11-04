@@ -82,25 +82,37 @@ try:
     )
     st.plotly_chart(fig_polar, use_container_width=True)
 
-    # ==============================
-    # Altair small multiple: Monthly Wind Roses
+     # ==============================
+    # Altair small multiple: Monthly Wind Roses (3x4 grid)
     # ==============================
     import altair as alt
 
-    st.subheader("🌬️ Monthly Wind Roses (Altair Small Multiples)")
+    st.subheader("🌬️ Monthly Wind Roses (for the Year)")
 
-    df["month"] = df["time"].dt.month.map(month_names)
+    # add months names
+    df["month_num"] = df["time"].dt.month
+    df["month"] = df["month_num"].map(month_names)
 
+    # Forcer l’ordre chronologique des mois
+    month_order = list(month_names.values())
+
+    # Créer le graphique facetté sur 3 colonnes (→ 4 lignes pour 12 mois)
     wind_alt = (
         alt.Chart(df)
         .mark_arc(innerRadius=20)
         .encode(
             theta=alt.Theta("wind_direction_10m (°):Q", bin=alt.Bin(step=30)),
-            color=alt.Color("wind_speed_10m (m/s):Q", scale=alt.Scale(scheme="viridis")),
             radius=alt.Radius("mean(wind_speed_10m (m/s)):Q", scale=alt.Scale(range=[0, 120])),
-            facet=alt.Facet("month:N", columns=4, title=None)
+            color=alt.Color("mean(wind_speed_10m (m/s)):Q", scale=alt.Scale(scheme="viridis")),
+            facet=alt.Facet(
+                "month:N",
+                columns=3,
+                sort=month_order,
+                title=None
+            )
         )
-        .properties(width=150, height=150)
+        .properties(width=180, height=180)
+        .configure_facet(spacing=15)
     )
 
     st.altair_chart(wind_alt, use_container_width=True)
