@@ -107,7 +107,7 @@ try:
             # Use radius to represent the mean wind speed in each direction bin
             radius=alt.Radius(
                 "mean(wind_speed_10m (m/s)):Q",
-                scale=alt.Scale(range=[0,50])  # Controls rose size
+                scale=alt.Scale(range=[0,80])  # Controls rose size
             ),
 
             # Color encodes mean wind speed
@@ -128,10 +128,10 @@ try:
         .properties(width=80, height=80)
 
         # Reduce spacing between small multiples
-        .configure_facet(spacing=10)
+        .configure_facet(spacing=8)
 
         # Ensure the plots resize gracefully to the Streamlit container
-        .configure_view(continuousWidth=100, continuousHeight=100)
+        .configure_view(stroke=None)
     )
 
     # Render the chart responsively inside Streamlit
