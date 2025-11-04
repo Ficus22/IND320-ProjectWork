@@ -82,40 +82,59 @@ try:
     )
     st.plotly_chart(fig_polar, use_container_width=True)
 
-     # ==============================
-    # Altair small multiple: Monthly Wind Roses (3x4 grid)
+    # ==============================
+    # Altair small multiple: Monthly Wind Roses (responsive 3x4 grid)
     # ==============================
     import altair as alt
 
-    st.subheader("🌬️ Monthly Wind Roses (for the Year)")
+    st.subheader("🌬️ Monthly Wind Roses (3×4 Grid for the Year)")
 
-    # add months names
+    # Extract month number and map to month name
     df["month_num"] = df["time"].dt.month
     df["month"] = df["month_num"].map(month_names)
 
-    # Forcer l’ordre chronologique des mois
+    # Keep chronological order for facet sorting
     month_order = list(month_names.values())
 
-    # Créer le graphique facetté sur 3 colonnes (→ 4 lignes pour 12 mois)
+    # Create a faceted Altair chart (3 columns × 4 rows)
+    # Each small plot shows the wind rose for a single month
     wind_alt = (
         alt.Chart(df)
-        .mark_arc(innerRadius=20)
+        .mark_arc(innerRadius=15)  # Use arc marks to make circular wind roses
         .encode(
+            # Divide direction (theta) into 30° bins around the circle
             theta=alt.Theta("wind_direction_10m (°):Q", bin=alt.Bin(step=30)),
-            radius=alt.Radius("mean(wind_speed_10m (m/s)):Q", scale=alt.Scale(range=[0, 120])),
-            color=alt.Color("mean(wind_speed_10m (m/s)):Q", scale=alt.Scale(scheme="viridis")),
+
+            # Use radius to represent the mean wind speed in each direction bin
+            radius=alt.Radius(
+                "mean(wind_speed_10m (m/s)):Q",
+                scale=alt.Scale(range=[0, 80])  # Controls rose size
+            ),
+
+            # Color encodes mean wind speed; 'viridis' gives good perceptual contrast
+            color=alt.Color(
+                "mean(wind_speed_10m (m/s)):Q",
+                scale=alt.Scale(scheme="viridis")
+            ),
+
+            # Facet by month to create small multiples (3 columns, 4 rows)
             facet=alt.Facet(
                 "month:N",
-                columns=3,
-                sort=month_order,
+                columns=3,          # 3 columns × 4 rows = 12 months
+                sort=month_order,   # Keep months in calendar order
                 title=None
             )
         )
-        .properties(width=180, height=180)
-        .configure_facet(spacing=15)
+        # Control each small plot’s size
+        .properties(width=130, height=130)
+
+        # Reduce spacing between small multiples
+        .configure_facet(spacing=10)
+
+        # Ensure the plots resize gracefully to the Streamlit container
+        .configure_view(continuousWidth=100, continuousHeight=100)
     )
 
+    # Render the chart responsively inside Streamlit
     st.altair_chart(wind_alt, use_container_width=True)
 
-except Exception as e:
-    st.error(f"Error loading data or generating plots: {e}")
