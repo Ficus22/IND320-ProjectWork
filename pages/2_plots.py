@@ -83,11 +83,11 @@ try:
     st.plotly_chart(fig_polar, use_container_width=True)
 
     # ==============================
-    # Altair small multiple: Monthly Wind Roses (responsive 3x4 grid)
+    # Altair small multiple: Monthly Wind Roses
     # ==============================
     import altair as alt
 
-    st.subheader("🌬️ Monthly Wind Roses (3×4 Grid for the Year)")
+    st.subheader("🌬️ Monthly Wind Roses (for the Year)")
 
     # Extract month number and map to month name
     df["month_num"] = df["time"].dt.month
@@ -97,7 +97,6 @@ try:
     month_order = list(month_names.values())
 
     # Create a faceted Altair chart (3 columns × 4 rows)
-    # Each small plot shows the wind rose for a single month
     wind_alt = (
         alt.Chart(df)
         .mark_arc(innerRadius=15)  # Use arc marks to make circular wind roses
@@ -111,7 +110,7 @@ try:
                 scale=alt.Scale(range=[0, 80])  # Controls rose size
             ),
 
-            # Color encodes mean wind speed; 'viridis' gives good perceptual contrast
+            # Color encodes mean wind speed
             color=alt.Color(
                 "mean(wind_speed_10m (m/s)):Q",
                 scale=alt.Scale(scheme="viridis")
@@ -138,3 +137,6 @@ try:
     # Render the chart responsively inside Streamlit
     st.altair_chart(wind_alt, use_container_width=True)
 
+
+except Exception as e:
+    st.error(f"Error loading data or generating plots: {e}")
