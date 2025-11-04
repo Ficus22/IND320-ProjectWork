@@ -3,6 +3,8 @@ import pandas as pd
 import plotly.express as px
 import altair as alt
 from datetime import datetime
+import numpy as np
+
 
 st.title("🌬️ Wind and Weather Analysis")
 

@@ -3,4 +3,5 @@ streamlit
 matplotlib
 plotly
 pymongo
+altair
 numpy
