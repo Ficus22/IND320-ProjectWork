@@ -107,7 +107,7 @@ try:
             # Use radius to represent the mean wind speed in each direction bin
             radius=alt.Radius(
                 "mean(wind_speed_10m (m/s)):Q",
-                scale=alt.Scale(range=[0, 80])  # Controls rose size
+                scale=alt.Scale(range=[0,10])  # Controls rose size
             ),
 
             # Color encodes mean wind speed
