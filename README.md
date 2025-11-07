@@ -16,7 +16,7 @@ This project analyzes hourly weather data (temperature, precipitation, wind spee
 ---
 ## 🔗 Links
 - **Streamlit App** : [see here](https://ind320-projectwork-esteban-carrasco.streamlit.app)
-- **Jupyter Notebook** : [see here](Notebook/notebook-project2.pdf)
+- **Jupyter Notebook** : [see here](Notebook/)
 - **Dataset**: `data/open-meteo-subset.csv` (hourly data for 2020).
 
 ---
