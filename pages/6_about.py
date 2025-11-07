@@ -3,9 +3,18 @@ import streamlit as st
 
 st.title("🔍 About")
 st.markdown("""
-## IND320 Project - Weather Data Analysis
 **Author**: Esteban Carrasco
+""")
 
+# -------------------------
+# Tabs
+# -------------------------
+tab1, tab2, tab3 = st.tabs(["Assignement 1", "Assignement 2", "Assignement 3"])
+
+# --- Tab 1 ---
+with tab1:
+    st.header("IND320 Project - Weather Data Analysis")
+    st.markdown("""
 **Objectives**:
 - Analyze hourly weather data from January 2020
 - Create interactive visualizations using Streamlit
@@ -14,10 +23,12 @@ st.markdown("""
 **Technologies Used**:
 - Python (Pandas, Plotly, NumPy)
 - Streamlit for the interactive dashboard
+""")
 
----
-
-## IND320 Project - Energy Production Data Analysis (New Addition)
+# --- Tab 2 ---
+with tab2:
+    st.header("IND320 Project - Energy Production Data Analysis")
+    st.markdown("""
 **Objectives**:
 - Retrieve and analyze hourly energy production data from the **Elhub API** for Norway in 2022.
 - Store data in **Cassandra** and **MongoDB** for efficient querying and visualization.
@@ -30,9 +41,7 @@ st.markdown("""
 - **MongoDB** for flexible querying and visualization.
 - **Streamlit** for the interactive dashboard.
 
----
-
-### Features Added (New Addition)
+**Features Added**:
 - **Data Extraction**: Automated retrieval of energy production data from the Elhub API.
 - **Data Storage**: Integration with **Cassandra** and **MongoDB** for robust data management.
 - **Interactive Visualizations**:
@@ -40,25 +49,42 @@ st.markdown("""
   - **Line plots** illustrating hourly production trends for selected months and price areas.
 - **User-Friendly Interface**: Filters to select specific price areas, production groups, and months.
 
----
-
-### Challenges and Adaptations (New Addition)
-Initially, the project was designed to use **Apache Spark** for data processing. However, due to **multiple connection issues** between Spark and Cassandra, I decided to abandon Spark. Instead, I used the **Cassandra Python driver** to directly extract and insert data, simplifying the workflow.
-
----
+**Challenges and Adaptations**:
+- Originally planned with **Apache Spark**, but due to **connection issues**, switched to **Cassandra Python driver** for direct data extraction and insertion.
+- Simplified workflow and reduced dependency issues.
 
 **Links**:
 - [GitHub Source Code](https://github.com/Ficus22/IND320-ProjectWork)
 
 **AI Usage**:
-*Le Chat* ([Mistral AI](https://mistral.ai/)) helps me in this project by:
-- Assist with advanced visualizations
+*Le Chat* ([Mistral AI](https://mistral.ai/)) assisted with:
+- Advanced visualizations
 - Translating the project into English
-- Assisting with **troubleshooting compatibility issues** between Cassandra, MongoDB, and Python libraries.
-- Providing **step-by-step guidance** for installation and configuration of Java, Cassandra, and MongoDB.
-- Helping to **resolve data type conversion errors** and optimize data processing.
-- Offering **alternative solutions** when initial attempts with Spark proved challenging.
+- Troubleshooting compatibility issues between Cassandra, MongoDB, and Python
+- Step-by-step guidance for Java, Cassandra, and MongoDB setup
+- Resolving data type conversion errors and optimizing data processing
+- Suggesting alternatives when Spark proved challenging
+""")
 
+# --- Tab 3 ---
+with tab3:
+    st.header("Advanced Analyses (STL, Spectrogram, SPC, LOF)")
+    st.markdown("""
+This section demonstrates the **time series and anomaly detection analyses** implemented in pages 2 and 5:
 
-**Note**: This project is a demonstration of data analysis and visualization skills and is not intended for commercial use. For more details, please refer to the associated Jupyter Notebook.
+**STL & Spectrogram Analysis**:
+- Performed **STL decomposition** for selected price areas and production groups.
+- Generated interactive plots for **observed, trend, seasonal, and residual components**.
+- Spectrograms visualize the **frequency content over time** for energy production.
+
+**Outlier & SPC Analysis**:
+- Applied **DCT high-pass filtering** to highlight rapid fluctuations in production.
+- Used **Statistical Process Control (SPC)** with median and MAD to detect unusual deviations.
+- Interactive charts show **original vs filtered data** with SPC boundaries and detected outliers.
+
+**Anomaly Detection with LOF**:
+- Used **Local Outlier Factor (LOF)** to detect anomalies in hourly production.
+- Visualizations display LOF-detected anomalies as red markers on time series.
+
+These analyses allow users to **explore patterns, trends, and anomalies** in energy production data in an interactive way.
 """)
