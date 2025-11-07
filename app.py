@@ -53,5 +53,5 @@ st.image(
 )
 
 st.markdown("---")
-st.markdown("Use the sidebar menu to navigate to Data Table, Visualizations, or About pages.")
-st.markdown("© 2025 Esteban Carrasco - NMBU")
+st.markdown("Use the sidebar menu to navigate through pages.")
+st.markdown("© 2025 Esteban Carrasco - ESILV")
