@@ -1,7 +1,7 @@
 # streamlit_app/pages/6_about.py
 import streamlit as st
 
-st.title("🔍 About")
+st.title("🔍 About - IND320 Project")
 st.markdown("""
 **Author**: Esteban Carrasco
             
@@ -15,7 +15,7 @@ tab1, tab2, tab3 = st.tabs(["Assignement 1", "Assignement 2", "Assignement 3"])
 
 # --- Tab 1 ---
 with tab1:
-    st.header("IND320 Project - Weather Data Analysis")
+    st.header("Weather Data Analysis")
     st.markdown("""
 **Objectives**:
 - Analyze hourly weather data from January 2020
@@ -29,7 +29,7 @@ with tab1:
 
 # --- Tab 2 ---
 with tab2:
-    st.header("IND320 Project - Energy Production Data Analysis")
+    st.header("Energy Production Data Analysis")
     st.markdown("""
 **Objectives**:
 - Retrieve and analyze hourly energy production data from the Elhub API for Norway in 2021.
