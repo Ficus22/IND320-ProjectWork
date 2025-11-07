@@ -42,7 +42,7 @@ st.title("📊 Weather Data Table for Selected Price Area")
 # --- Retrieve selected price area from another page ---
 # Suppose the other page stored the selection in session_state
 if "selected_price_area" not in st.session_state:
-    st.error("No price area selected. Please select one on the previous page.")
+    st.error("No price area selected. Please select a Price Area on page 2 (elhub) first.")
     st.stop()
 
 price_area = st.session_state.selected_price_area
@@ -52,7 +52,7 @@ if location is None:
     st.stop()
 
 # --- Year selection ---
-year = st.number_input("Select year:", min_value=2000, max_value=datetime.now().year, value=2020)
+year = st.number_input("Select year:", min_value=2000, max_value=datetime.now().year, value=2021)
 
 # --- Load data ---
 @st.cache_data
