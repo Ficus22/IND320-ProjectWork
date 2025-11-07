@@ -63,12 +63,13 @@ with tab1:
     else:
         # STL decomposition
         # S'assurer que start_time est datetime et sans timezone
+        # 1. S'assurer que start_time est datetime et enlever le timezone
         df_area_group["start_time"] = pd.to_datetime(df_area_group["start_time"]).dt.tz_localize(None)
 
-        # Mettre start_time comme index
+        # 2. Mettre start_time comme index
         df_area_group = df_area_group.set_index("start_time")
 
-        # Garder uniquement les colonnes numériques pour le resample
+        # 3. Ne garder que les colonnes numériques
         numeric_cols = df_area_group.select_dtypes(include="number").columns
         df_area_group = df_area_group[numeric_cols].resample("H").sum().interpolate()
 
