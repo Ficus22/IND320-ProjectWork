@@ -120,14 +120,14 @@ if selected_col == "All columns":
         filtered_df,
         x="time",
         y=numeric_cols,
-        title=f"Weather variables over time ({month_names[0]} → {month_names[1]})"
+        title=f"Weather variables over time ({month_names[month_range[0]]} → {month_names[month_range[1]]})"
     )
 else:
     fig = px.line(
         filtered_df,
         x="time",
         y=selected_col,
-        title=f"{selected_col} ({month_names[0]} → {month_names[1]})"
+        title=f"{selected_col} ({month_names[month_range[0]]} → {month_names[month_range[1]]})"
     )
 
 fig.update_layout(
