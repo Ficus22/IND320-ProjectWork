@@ -8,7 +8,7 @@ from scipy.signal import spectrogram
 import numpy as np
 from pymongo import MongoClient
 
-st.set_page_config(page_title="📊 Elhub Analysis", layout="wide")
+st.set_page_config(page_title="Elhub Analysis", layout="wide")
 
 # -------------------------
 # Check if a price area was selected
@@ -36,7 +36,7 @@ if price_area not in PRICE_AREAS:
 
 city = PRICE_AREAS[price_area]["city"]
 
-st.title(f"📊 Elhub Time Series Analysis for {city}")
+st.title(f"📊 Seasonal-Trend and spectogram for {city}")
 
 # -------------------------
 # Load data (MongoDB / Elhub)
@@ -67,7 +67,7 @@ with tab1:
     selected_group = st.selectbox("Select Production Group", production_groups)
     
     # STL parameters
-    period = st.number_input("Period (hours)", value=24*7, step=1)
+    period = st.number_input("Period (hours) - one week = 168 hours", value=24*7, step=1)
     seasonal = st.number_input("Seasonal Smoother", value=13, step=1)
     trend = st.number_input("Trend Smoother", value=201, step=1)
     robust = st.checkbox("Robust fitting", value=True)
@@ -112,7 +112,7 @@ with tab2:
     selected_group_spec = st.selectbox("Select Production Group for Spectrogram", production_groups, key="spec_group")
     
     # Spectrogram parameters
-    window_length = st.number_input("Window length (hours)", value=24*7, step=1)
+    window_length = st.number_input("Period (hours) - one week = 168 hours", value=24*7, step=1)
     window_overlap = st.slider("Window overlap (%)", min_value=0.0, max_value=0.9, value=0.5, step=0.05)
     colorscale = st.selectbox("Colorscale", ["Viridis", "Cividis", "Plasma", "Inferno", "Magma"])
     

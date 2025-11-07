@@ -7,7 +7,7 @@ from scipy.fftpack import dct, idct
 from sklearn.neighbors import LocalOutlierFactor
 from pymongo import MongoClient
 
-st.set_page_config(page_title="🔍 Anomaly & SPC Analysis", layout="wide")
+st.set_page_config(page_title="Anomaly & SPC Analysis", layout="wide")
 
 # -------------------------
 # Check if price area selected on page 2
@@ -35,7 +35,7 @@ if price_area not in PRICE_AREAS:
 
 city = PRICE_AREAS[price_area]["city"]
 
-st.title(f"🔍 Outlier & Anomaly Analysis for {city}")
+st.title(f"🔍 Outliers and anomalies for {city}")
 
 # -------------------------
 # Load data (MongoDB / Elhub)
