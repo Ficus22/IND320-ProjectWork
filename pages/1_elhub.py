@@ -37,9 +37,10 @@ PRICE_AREAS = {
 }
 
 # -------------------------
-# Price area selection including "ALL"
+# Price area selection
 # -------------------------
-price_areas = ["ALL"] + list(df["price_area"].unique())
+price_areas = list(df["price_area"].unique())  # Removed "ALL"
+
 # Add city name in parentheses
 price_area_options = []
 for pa in price_areas:
@@ -48,19 +49,14 @@ for pa in price_areas:
     else:
         price_area_options.append(pa)
 
-# Default selection
-default_idx = 0
-if "selected_price_area" in st.session_state:
-    # Keep previous selection if exists
-    default_idx = price_areas.index(st.session_state.selected_price_area)
+# Default selection: N=1
+default_price_area = "NO1"
+default_idx = price_areas.tolist().index(default_price_area) if default_price_area in price_areas else 0
 
 selected_option = st.selectbox("Select Price Area", price_area_options, index=default_idx)
 
 # Extract price area code from selection
-if selected_option == "ALL":
-    price_area = "ALL"
-else:
-    price_area = selected_option.split(" ")[0]
+price_area = selected_option.split(" ")[0]
 
 # Store selection in session_state for access on other pages
 st.session_state.selected_price_area = price_area
