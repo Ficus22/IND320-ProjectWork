@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from statsmodels.tsa.seasonal import STL
 from scipy.signal import spectrogram
+import numpy as np
+
 
 st.set_page_config(page_title="📊 Elhub Analysis", layout="wide")
 st.title("📊 Elhub Time Series Analysis")
