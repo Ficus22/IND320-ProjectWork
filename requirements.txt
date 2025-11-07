@@ -4,3 +4,7 @@ matplotlib
 plotly
 pymongo
 altair
+requests
+statsmodels
+scipy
+numpy

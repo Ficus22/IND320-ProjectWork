@@ -1,4 +1,4 @@
-# streamlit_app/pages/3_elhub.py
+# streamlit_app/pages/1_elhub.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -26,18 +26,50 @@ st.title("⚡Energy Production in 2021")
 st.markdown("Analyze monthly production trends and energy distribution by production group.")
 
 # -------------------------
-# Monthly Production Trends
+# Price area to city mapping
 # -------------------------
-st.header("Monthly Production Trends")
+PRICE_AREAS = {
+    "NO1": "Oslo",
+    "NO2": "Kristiansand",
+    "NO3": "Trondheim",
+    "NO4": "Tromsø",
+    "NO5": "Bergen"
+}
 
+# -------------------------
 # Price area selection including "ALL"
+# -------------------------
 price_areas = ["ALL"] + list(df["price_area"].unique())
-price_area = st.selectbox("Select Price Area", price_areas)
+# Add city name in parentheses
+price_area_options = []
+for pa in price_areas:
+    if pa in PRICE_AREAS:
+        price_area_options.append(f"{pa} ({PRICE_AREAS[pa]})")
+    else:
+        price_area_options.append(pa)
 
+# Default selection
+default_idx = 0
+if "selected_price_area" in st.session_state:
+    # Keep previous selection if exists
+    default_idx = price_areas.index(st.session_state.selected_price_area)
+
+selected_option = st.selectbox("Select Price Area", price_area_options, index=default_idx)
+
+# Extract price area code from selection
+if selected_option == "ALL":
+    price_area = "ALL"
+else:
+    price_area = selected_option.split(" ")[0]
+
+# Store selection in session_state for access on other pages
+st.session_state.selected_price_area = price_area
+
+# -------------------------
 # Production groups selection
+# -------------------------
 production_groups = df["production_group"].dropna().unique()
 selected_groups = st.multiselect("Select Production Groups", production_groups)
-
 
 # -------------------------
 # Month range selection using names

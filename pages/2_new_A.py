@@ -1,0 +1,123 @@
+# streamlit_app/pages/2_new_A.py
+import streamlit as st
+import pandas as pd
+import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from statsmodels.tsa.seasonal import STL
+from scipy.signal import spectrogram
+
+st.set_page_config(page_title="📊 Elhub Analysis", layout="wide")
+st.title("📊 Elhub Time Series Analysis")
+
+# -------------------------
+# Check if a price area was selected on page 1
+# -------------------------
+if "selected_price_area" not in st.session_state:
+    st.warning("Please select a Price Area on page 1 first.")
+    st.stop()
+
+price_area = st.session_state.selected_price_area
+
+# -------------------------
+# Load data (MongoDB / Elhub) - adjust as in page 1
+# -------------------------
+from pymongo import MongoClient
+
+MONGO_URI = st.secrets["MONGO_URI"]
+client = MongoClient(MONGO_URI)
+db = client["elhub_data"]
+collection = db["production_data"]
+
+data = list(collection.find({}))
+df = pd.DataFrame(data)
+
+if not pd.api.types.is_datetime64_any_dtype(df["start_time"]):
+    df["start_time"] = pd.to_datetime(df["start_time"], utc=True)
+
+# -------------------------
+# Tabs for STL and Spectrogram
+# -------------------------
+tab1, tab2 = st.tabs(["STL Decomposition", "Spectrogram"])
+
+# -------------------------
+# --- TAB 1: STL Decomposition ---
+# -------------------------
+with tab1:
+    st.header("STL Decomposition")
+    
+    # Select production group
+    production_groups = df["production_group"].dropna().unique()
+    selected_group = st.selectbox("Select Production Group", production_groups)
+    
+    # STL parameters
+    period = st.number_input("Period (hours)", value=24*7, step=1)
+    seasonal = st.number_input("Seasonal Smoother", value=13, step=1)
+    trend = st.number_input("Trend Smoother", value=201, step=1)
+    robust = st.checkbox("Robust fitting", value=True)
+    
+    # Filter data
+    df_area_group = df[(df["price_area"] == price_area) & (df["production_group"] == selected_group)]
+    
+    if df_area_group.empty:
+        st.info("No data available for this selection.")
+    else:
+        # STL decomposition
+        df_area_group = df_area_group.set_index("start_time").resample("H").sum().interpolate()
+        stl = STL(df_area_group["quantity_kwh"], period=period, seasonal=seasonal, trend=trend, robust=robust)
+        result = stl.fit()
+        
+        # Plot
+        fig, axes = plt.subplots(4,1, figsize=(12,8), sharex=True)
+        axes[0].plot(result.observed, color="blue"); axes[0].set_ylabel("Observed")
+        axes[1].plot(result.trend, color="orange"); axes[1].set_ylabel("Trend")
+        axes[2].plot(result.seasonal, color="green"); axes[2].set_ylabel("Seasonal")
+        axes[3].plot(result.resid, color="red"); axes[3].set_ylabel("Residual")
+        plt.xlabel("Time")
+        plt.tight_layout()
+        st.pyplot(fig)
+
+# -------------------------
+# --- TAB 2: Spectrogram ---
+# -------------------------
+with tab2:
+    st.header("Spectrogram")
+    
+    # Select production group (same or different)
+    selected_group_spec = st.selectbox("Select Production Group for Spectrogram", production_groups, key="spec_group")
+    
+    # Spectrogram parameters
+    window_length = st.number_input("Window length (hours)", value=24*7, step=1)
+    window_overlap = st.slider("Window overlap (%)", min_value=0.0, max_value=0.9, value=0.5, step=0.05)
+    colorscale = st.selectbox("Colorscale", ["Viridis", "Cividis", "Plasma", "Inferno", "Magma"])
+    
+    # Filter data
+    df_spec = df[(df["price_area"] == price_area) & (df["production_group"] == selected_group_spec)]
+    
+    if df_spec.empty:
+        st.info("No data available for this selection.")
+    else:
+        df_spec = df_spec.set_index("start_time").resample("H").sum().interpolate()
+        y = df_spec["quantity_kwh"].to_numpy()
+        nperseg = int(window_length)
+        noverlap = int(nperseg * window_overlap)
+        fs = 1.0
+        
+        freqs, times, Sxx = spectrogram(y, fs=fs, nperseg=nperseg, noverlap=noverlap, scaling="density", detrend="linear", mode="psd")
+        Sxx_db = 10 * np.log10(Sxx + 1e-10)
+        freqs_per_day = freqs * 24
+        
+        fig = go.Figure(go.Heatmap(
+            z=Sxx_db,
+            x=times,
+            y=freqs_per_day,
+            colorscale=colorscale,
+            colorbar=dict(title="Power (dB)"),
+            zsmooth="best"
+        ))
+        fig.update_layout(
+            title=f"Spectrogram — Area {price_area} · Group {selected_group_spec}",
+            xaxis_title="Time (hours)",
+            yaxis_title="Frequency (cycles/day)",
+            yaxis=dict(autorange="reversed")
+        )
+        st.plotly_chart(fig, use_container_width=True)
