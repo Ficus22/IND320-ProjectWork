@@ -8,3 +8,4 @@ requests
 statsmodels
 scipy
 numpy
+scikit-learn

@@ -13,7 +13,7 @@ st.title("🔍 Outlier & Anomaly Analysis")
 # Check if price area selected on page 1
 # -------------------------
 if "selected_price_area" not in st.session_state:
-    st.warning("Please select a Price Area on page 1 first.")
+    st.warning("Please select a Price Area on page 2 (elhub) first.")
     st.stop()
 
 price_area = st.session_state.selected_price_area
