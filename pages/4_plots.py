@@ -34,7 +34,7 @@ latitude = PRICE_AREAS[price_area]["lat"]
 longitude = PRICE_AREAS[price_area]["lon"]
 
 st.title(f"📈 Weather Visualizations for {city}")
-st.markdown("Open-Meteo ERA5 data")
+st.markdown("*Open-Meteo ERA5 data*")
 
 # ==============================
 # Function to download Open-Meteo ERA5 data
@@ -120,14 +120,14 @@ if selected_col == "All columns":
         filtered_df,
         x="time",
         y=numeric_cols,
-        title=f"Weather variables over time ({month_range[0]} → {month_range[1]})"
+        title=f"Weather variables over time ({month_names[0]} → {month_names[1]})"
     )
 else:
     fig = px.line(
         filtered_df,
         x="time",
         y=selected_col,
-        title=f"{selected_col} ({month_range[0]} → {month_range[1]})"
+        title=f"{selected_col} ({month_names[0]} → {month_names[1]})"
     )
 
 fig.update_layout(
