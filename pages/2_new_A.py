@@ -107,24 +107,24 @@ with tab2:
         st.info("No data available for this selection.")
     else:
         # S'assurer que start_time est datetime et sans timezone
-        df_area_group["start_time"] = pd.to_datetime(df_area_group["start_time"]).dt.tz_localize(None)
+        df_spec["start_time"] = pd.to_datetime(df_spec["start_time"]).dt.tz_localize(None)
 
         # Mettre start_time comme index
-        df_area_group = df_area_group.set_index("start_time")
+        df_spec = df_spec.set_index("start_time")
 
         # Garder uniquement les colonnes numériques pour le resample
-        numeric_cols = df_area_group.select_dtypes(include="number").columns
-        df_area_group = df_area_group[numeric_cols].resample("H").sum().interpolate()
+        numeric_cols = df_spec.select_dtypes(include="number").columns
+        df_spec_resampled = df_spec[numeric_cols].resample("H").sum().interpolate()
 
-        y = df_spec["quantity_kwh"].to_numpy()
+        y = df_spec_resampled["quantity_kwh"].to_numpy()
         nperseg = int(window_length)
         noverlap = int(nperseg * window_overlap)
         fs = 1.0
-        
+
         freqs, times, Sxx = spectrogram(y, fs=fs, nperseg=nperseg, noverlap=noverlap, scaling="density", detrend="linear", mode="psd")
         Sxx_db = 10 * np.log10(Sxx + 1e-10)
         freqs_per_day = freqs * 24
-        
+
         fig = go.Figure(go.Heatmap(
             z=Sxx_db,
             x=times,
