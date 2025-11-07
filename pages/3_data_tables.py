@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import requests
 
-# --- API function ---
+# --- API fetch ---
 OPENMETEO_ERA5 = "https://archive-api.open-meteo.com/v1/era5"
 
 def download_weather_data(latitude: float, longitude: float, year: int, 
@@ -40,7 +40,6 @@ PRICE_AREAS = {
 st.title("📊 Weather Data Table for Selected Price Area")
 
 # --- Retrieve selected price area from another page ---
-# Suppose the other page stored the selection in session_state
 if "selected_price_area" not in st.session_state:
     st.error("No price area selected. Please select a Price Area on page 2 (elhub) first.")
     st.stop()

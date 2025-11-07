@@ -7,12 +7,11 @@ from statsmodels.tsa.seasonal import STL
 from scipy.signal import spectrogram
 import numpy as np
 
-
 st.set_page_config(page_title="📊 Elhub Analysis", layout="wide")
 st.title("📊 Elhub Time Series Analysis")
 
 # -------------------------
-# Check if a price area was selected on page 1
+# Check if a price area was selected on page 2
 # -------------------------
 if "selected_price_area" not in st.session_state:
     st.warning("Please select a Price Area on page 2 (elhub) first.")
@@ -21,7 +20,7 @@ if "selected_price_area" not in st.session_state:
 price_area = st.session_state.selected_price_area
 
 # -------------------------
-# Load data (MongoDB / Elhub) - adjust as in page 1
+# Load data (MongoDB / Elhub)
 # -------------------------
 from pymongo import MongoClient
 
@@ -57,27 +56,27 @@ with tab1:
     trend = st.number_input("Trend Smoother", value=201, step=1)
     robust = st.checkbox("Robust fitting", value=True)
     
-    # Filter data
+    # Filter data by selected price area and production group
     df_area_group = df[(df["price_area"] == price_area) & (df["production_group"] == selected_group)]
     
     if df_area_group.empty:
         st.info("No data available for this selection.")
     else:
-        # STL decomposition
-        # S'assurer que start_time est datetime et sans timezone
+        # Ensure start_time is datetime without timezone
         df_area_group["start_time"] = pd.to_datetime(df_area_group["start_time"]).dt.tz_localize(None)
 
-        # Mettre start_time comme index
+        # Set start_time as index
         df_area_group = df_area_group.set_index("start_time")
 
-        # Ne garder que les colonnes numériques
+        # Keep only numeric columns and resample hourly
         numeric_cols = df_area_group.select_dtypes(include="number").columns
         df_area_group = df_area_group[numeric_cols].resample("H").sum().interpolate()
 
+        # STL decomposition
         stl = STL(df_area_group["quantity_kwh"], period=period, seasonal=seasonal, trend=trend, robust=robust)
         result = stl.fit()
         
-        #Plot
+        # Plot
         fig = go.Figure()
 
         fig.add_trace(go.Scatter(
@@ -130,22 +129,23 @@ with tab2:
     window_overlap = st.slider("Window overlap (%)", min_value=0.0, max_value=0.9, value=0.5, step=0.05)
     colorscale = st.selectbox("Colorscale", ["Viridis", "Cividis", "Plasma", "Inferno", "Magma"])
     
-    # Filter data
+    # Filter data by selected price area and production group
     df_spec = df[(df["price_area"] == price_area) & (df["production_group"] == selected_group_spec)]
     
     if df_spec.empty:
         st.info("No data available for this selection.")
     else:
-        # S'assurer que start_time est datetime et sans timezone
+        # Ensure start_time is datetime without timezone
         df_spec["start_time"] = pd.to_datetime(df_spec["start_time"]).dt.tz_localize(None)
 
-        # Mettre start_time comme index
+        # Set start_time as index
         df_spec = df_spec.set_index("start_time")
 
-        # Garder uniquement les colonnes numériques pour le resample
+        # Keep only numeric columns and resample hourly
         numeric_cols = df_spec.select_dtypes(include="number").columns
         df_spec_resampled = df_spec[numeric_cols].resample("H").sum().interpolate()
 
+        # Compute spectrogram
         y = df_spec_resampled["quantity_kwh"].to_numpy()
         nperseg = int(window_length)
         noverlap = int(nperseg * window_overlap)
@@ -155,6 +155,7 @@ with tab2:
         Sxx_db = 10 * np.log10(Sxx + 1e-10)
         freqs_per_day = freqs * 24
 
+        # Plot spectrogram
         fig = go.Figure(go.Heatmap(
             z=Sxx_db,
             x=times,

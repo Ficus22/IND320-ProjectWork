@@ -10,7 +10,7 @@ st.set_page_config(page_title="🔍 Anomaly & SPC Analysis", layout="wide")
 st.title("🔍 Outlier & Anomaly Analysis")
 
 # -------------------------
-# Check if price area selected on page 1
+# Check if price area selected on page 2
 # -------------------------
 if "selected_price_area" not in st.session_state:
     st.warning("Please select a Price Area on page 2 (elhub) first.")
@@ -33,7 +33,7 @@ if not pd.api.types.is_datetime64_any_dtype(df["start_time"]):
     df["start_time"] = pd.to_datetime(df["start_time"], utc=True)
 
 # -------------------------
-# Helper functions
+# Functions
 # -------------------------
 def high_pass_filter(data, cutoff_frequency=0.3):
     data_array = np.asarray(data)
@@ -95,17 +95,18 @@ with tab1:
     cutoff_frequency = st.slider("DCT High-pass cutoff frequency", min_value=0.0, max_value=1.0, value=0.3)
     n_std = st.number_input("SPC n_std", value=3, step=1)
 
+    # Filter data by selected price area and production group
     df_tab1 = df[(df["price_area"]==price_area) & (df["production_group"]==selected_group)]
     if df_tab1.empty:
         st.info("No data available for this selection.")
     else:
-        # S'assurer que start_time est datetime et sans timezone
+        # Ensure start_time is datetime without timezone
         df_tab1["start_time"] = pd.to_datetime(df_tab1["start_time"]).dt.tz_localize(None)
 
-        # Mettre start_time comme index
+        # Set start_time as index
         df_tab1 = df_tab1.set_index("start_time")
 
-        # Ne garder que les colonnes numériques
+        # Keep only numeric columns and resample hourly
         numeric_cols = df_tab1.select_dtypes(include="number").columns
         df_tab1_resampled = df_tab1[numeric_cols].resample("H").sum().interpolate()
 
@@ -118,17 +119,18 @@ with tab2:
     selected_group_lof = st.selectbox("Select Production Group", groups, key="lof_group")
     contamination = st.slider("Expected outliers (%)", min_value=0.0, max_value=10.0, value=1.0)/100
 
+    # Filter data by selected price area and production group
     df_tab2 = df[(df["price_area"]==price_area) & (df["production_group"]==selected_group_lof)]
     if df_tab2.empty:
         st.info("No data available for this selection.")
     else:
-        # S'assurer que start_time est datetime et sans timezone
+        # Ensure start_time is datetime without timezone
         df_tab2["start_time"] = pd.to_datetime(df_tab2["start_time"]).dt.tz_localize(None)
 
-        # Mettre start_time comme index
+        # Set start_time as index
         df_tab2 = df_tab2.set_index("start_time")
 
-        # Ne garder que les colonnes numériques
+        # Keep only numeric columns and resample hourly
         numeric_cols = df_tab2.select_dtypes(include="number").columns
         df_tab2_resampled = df_tab2[numeric_cols].resample("H").sum().interpolate()
 

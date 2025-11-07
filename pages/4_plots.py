@@ -7,9 +7,9 @@ from datetime import datetime
 
 st.title("📈 Weather Visualizations (Open-Meteo ERA5)")
 
-# ==============================
-# Vérification de la zone de prix choisie
-# ==============================
+# -------------------------
+# Check if a price area was selected on page 2
+# -------------------------
 if "selected_price_area" not in st.session_state:
     st.warning("Please select a Price Area on page 2 (elhub) first.")
     st.stop()
@@ -54,9 +54,7 @@ def download_weather_data(latitude: float, longitude: float, year: int,
         df[v] = pd.to_numeric(hourly_data.get(v, []), errors="coerce")
     return df
 
-# ==============================
 # Year selection (default 2021)
-# ==============================
 selected_year = st.number_input("Select year (below 2025):", min_value=1979, max_value=datetime.utcnow().year, value=2021, step=1)
 
 # ==============================
