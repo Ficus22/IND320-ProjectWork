@@ -4,6 +4,7 @@ import streamlit as st
 st.title("🔍 About")
 st.markdown("""
 **Author**: Esteban Carrasco
+            
 **Link**:[GitHub Source Code](https://github.com/Ficus22/IND320-ProjectWork)
 """)
 
@@ -70,21 +71,55 @@ with tab2:
 with tab3:
     st.header("Advanced Analyses (STL, Spectrogram, SPC, LOF)")
     st.markdown("""
-This section demonstrates the **time series and anomaly detection analyses** implemented in pages 2 and 5:
+**Objectives**:
+- Implement time series analyses and anomaly detection as per project guidelines.
+- Perform **Seasonal-Trend decomposition using LOESS (STL)** on energy production data.
+- Generate **spectrograms** to visualize frequency content over time.
+- Detect outliers in weather and production data using **Statistical Process Control (SPC)** and **Direct Cosine Transform (DCT)**.
+- Detect anomalies using **Local Outlier Factor (LOF)**.
+- Wrap all analyses in reusable functions with sensible default parameters.
+- Integrate results into Streamlit with interactive visualizations.
 
-**STL & Spectrogram Analysis**:
-- Performed **STL decomposition** for selected price areas and production groups.
-- Generated interactive plots for **observed, trend, seasonal, and residual components**.
-- Spectrograms visualize the **frequency content over time** for energy production.
+**Technologies Used**:
+- **Python** (Pandas, NumPy, Matplotlib, Plotly, SciPy, Scikit-learn)
+- **Streamlit** for interactive visualization.
+- Statistical and signal processing methods:
+  - **STL decomposition** (LOESS)
+  - **DCT high-pass filtering**
+  - **SPC boundaries with median and MAD**
+  - **LOF anomaly detection**
+  - **Spectrogram generation**
 
-**Outlier & SPC Analysis**:
-- Applied **DCT high-pass filtering** to highlight rapid fluctuations in production.
-- Used **Statistical Process Control (SPC)** with median and MAD to detect unusual deviations.
-- Interactive charts show **original vs filtered data** with SPC boundaries and detected outliers.
+**Features Added**:
+- **STL & Spectrogram Analysis**:
+  - Decomposition of energy production data by price area, production group, and period.
+  - Interactive plots for observed, trend, seasonal, and residual components.
+  - Spectrograms illustrating frequency variations over time.
+- **Outlier & SPC Analysis**:
+  - High-pass filtering of temperature or production data using DCT.
+  - SPC boundary calculation and visualization of outliers.
+- **Anomaly Detection with LOF**:
+  - Detection of anomalous points in hourly data.
+  - Interactive visualizations highlighting LOF-detected anomalies.
+- **Reusable Functions**:
+  - All analyses wrapped in functions with default parameters for reproducibility.
+  - Functions return both plots and summaries/statistics of outliers or anomalies.
 
-**Anomaly Detection with LOF**:
-- Used **Local Outlier Factor (LOF)** to detect anomalies in hourly production.
-- Visualizations display LOF-detected anomalies as red markers on time series.
+**Challenges and Adaptations**:
+- Ensured compatibility with data retrieved via the **Open-Meteo API** for multiple locations (Oslo, Kristiansand, Trondheim, Tromsø, Bergen).
+- Adapted plots and analyses to dynamically handle user-selected years and price areas via Streamlit selectors.
+- Structured new pages in the Streamlit app to match project workflow (new A: STL/Spectrogram, new B: Outlier/SPC + LOF).
+- Verified consistency of DCT cut-offs, SPC thresholds, and LOF parameters across datasets.
+- Wrapped repetitive workflows in functions for modularity and easier testing.
 
-These analyses allow users to **explore patterns, trends, and anomalies** in energy production data in an interactive way.
+---
+
+### **AI Usage**:
+*Le Chat* ([Mistral AI](https://mistral.ai/)) assisted with:
+- Implementing STL decomposition and spectrogram visualizations.
+- Designing SPC and LOF analyses for time series data.
+- Troubleshooting parameter choices for DCT filtering and anomaly detection.
+- Writing reusable functions and interactive Streamlit elements.
+- Optimizing plots for clarity and interactivity.
+- Translating project instructions and adapting code to project consignes.
 """)
