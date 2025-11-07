@@ -62,12 +62,15 @@ with tab1:
         st.info("No data available for this selection.")
     else:
         # STL decomposition
-        # Après avoir chargé / filtré df_area_group
-        # Supprime le fuseau horaire
-        df_area_group["start_time"] = pd.to_datetime(df_area_group["start_time"])  # assure que c'est datetime
-        df_area_group["start_time"] = df_area_group["start_time"].dt.tz_localize(None)
+        # S'assurer que start_time est datetime et sans timezone
+        df_area_group["start_time"] = pd.to_datetime(df_area_group["start_time"]).dt.tz_localize(None)
 
-        df_area_group = df_area_group.set_index("start_time").resample("H").sum().interpolate()
+        # Mettre start_time comme index
+        df_area_group = df_area_group.set_index("start_time")
+
+        # Garder uniquement les colonnes numériques pour le resample
+        numeric_cols = df_area_group.select_dtypes(include="number").columns
+        df_area_group = df_area_group[numeric_cols].resample("H").sum().interpolate()
 
         stl = STL(df_area_group["quantity_kwh"], period=period, seasonal=seasonal, trend=trend, robust=robust)
         result = stl.fit()
@@ -102,11 +105,15 @@ with tab2:
     if df_spec.empty:
         st.info("No data available for this selection.")
     else:
-        df_area_group["start_time"] = pd.to_datetime(df_area_group["start_time"])  # assure que c'est datetime
-        df_area_group["start_time"] = df_area_group["start_time"].dt.tz_localize(None)
+        # S'assurer que start_time est datetime et sans timezone
+        df_area_group["start_time"] = pd.to_datetime(df_area_group["start_time"]).dt.tz_localize(None)
 
-        df_area_group = df_area_group.set_index("start_time").resample("H").sum().interpolate()
+        # Mettre start_time comme index
+        df_area_group = df_area_group.set_index("start_time")
 
+        # Garder uniquement les colonnes numériques pour le resample
+        numeric_cols = df_area_group.select_dtypes(include="number").columns
+        df_area_group = df_area_group[numeric_cols].resample("H").sum().interpolate()
 
         y = df_spec["quantity_kwh"].to_numpy()
         nperseg = int(window_length)
