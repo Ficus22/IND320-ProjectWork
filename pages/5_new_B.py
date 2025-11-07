@@ -99,8 +99,18 @@ with tab1:
     if df_tab1.empty:
         st.info("No data available for this selection.")
     else:
-        df_tab1 = df_tab1.set_index("start_time").resample("H").sum().interpolate()
-        plot_temperature_spc_dct_plotly(df_tab1["quantity_kwh"], df_tab1.index, cutoff_frequency=cutoff_frequency, n_std=n_std)
+        # S'assurer que start_time est datetime et sans timezone
+        df_tab1["start_time"] = pd.to_datetime(df_tab1["start_time"]).dt.tz_localize(None)
+
+        # Mettre start_time comme index
+        df_tab1 = df_tab1.set_index("start_time")
+
+        # Ne garder que les colonnes numériques
+        numeric_cols = df_tab1.select_dtypes(include="number").columns
+        df_tab1_resampled = df_tab1[numeric_cols].resample("H").sum().interpolate()
+
+        plot_temperature_spc_dct_plotly(df_tab1_resampled["quantity_kwh"], df_tab1_resampled.index, 
+                                        cutoff_frequency=cutoff_frequency, n_std=n_std)
 
 # --- Tab 2: Anomaly/LOF ---
 with tab2:
@@ -112,5 +122,14 @@ with tab2:
     if df_tab2.empty:
         st.info("No data available for this selection.")
     else:
-        df_tab2 = df_tab2.set_index("start_time").resample("H").sum().interpolate()
-        plot_precipitation_with_lof(df_tab2["quantity_kwh"], df_tab2.index, contamination=contamination)
+        # S'assurer que start_time est datetime et sans timezone
+        df_tab2["start_time"] = pd.to_datetime(df_tab2["start_time"]).dt.tz_localize(None)
+
+        # Mettre start_time comme index
+        df_tab2 = df_tab2.set_index("start_time")
+
+        # Ne garder que les colonnes numériques
+        numeric_cols = df_tab2.select_dtypes(include="number").columns
+        df_tab2_resampled = df_tab2[numeric_cols].resample("H").sum().interpolate()
+
+        plot_precipitation_with_lof(df_tab2_resampled["quantity_kwh"], df_tab2_resampled.index, contamination=contamination)
