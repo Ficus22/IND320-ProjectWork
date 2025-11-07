@@ -13,7 +13,7 @@ st.title("📊 Elhub Time Series Analysis")
 # Check if a price area was selected on page 1
 # -------------------------
 if "selected_price_area" not in st.session_state:
-    st.warning("Please select a Price Area on page 1 first.")
+    st.warning("Please select a Price Area on page 2 (elhub) first.")
     st.stop()
 
 price_area = st.session_state.selected_price_area
@@ -62,7 +62,15 @@ with tab1:
         st.info("No data available for this selection.")
     else:
         # STL decomposition
-        df_area_group = df_area_group.set_index("start_time").resample("H").sum().interpolate()
+        # Après avoir chargé / filtré df_area_group
+        # Supprime le fuseau horaire en coupant les 6 derniers caractères
+        df_area_group["start_time"] = df_area_group["start_time"].str[:-6]
+        df_area_group["start_time"] = pd.to_datetime(df_area_group["start_time"])
+
+        df_area_group = df_area_group.set_index("start_time")
+        numeric_cols = df_area_group.select_dtypes(include="number").columns
+        df_area_group = df_area_group[numeric_cols].resample("H").sum().interpolate()
+
         stl = STL(df_area_group["quantity_kwh"], period=period, seasonal=seasonal, trend=trend, robust=robust)
         result = stl.fit()
         
@@ -96,7 +104,12 @@ with tab2:
     if df_spec.empty:
         st.info("No data available for this selection.")
     else:
-        df_spec = df_spec.set_index("start_time").resample("H").sum().interpolate()
+        df_area_group["start_time"] = df_area_group["start_time"].str[:-6]
+        df_area_group["start_time"] = pd.to_datetime(df_area_group["start_time"])
+        df_area_group = df_area_group.set_index("start_time")
+        numeric_cols = df_area_group.select_dtypes(include="number").columns
+        df_area_group = df_area_group[numeric_cols].resample("H").sum().interpolate()
+
         y = df_spec["quantity_kwh"].to_numpy()
         nperseg = int(window_length)
         noverlap = int(nperseg * window_overlap)
