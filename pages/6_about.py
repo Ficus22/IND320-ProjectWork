@@ -5,7 +5,7 @@ st.title("🔍 About")
 st.markdown("""
 **Author**: Esteban Carrasco
             
-**Link**:[GitHub Source Code](https://github.com/Ficus22/IND320-ProjectWork)
+**Link**: [GitHub Source Code](https://github.com/Ficus22/IND320-ProjectWork)
 """)
 
 # -------------------------
@@ -73,10 +73,10 @@ with tab3:
     st.markdown("""
 **Objectives**:
 - Implement time series analyses and anomaly detection as per project guidelines.
-- Perform **Seasonal-Trend decomposition using LOESS (STL)** on energy production data.
-- Generate **spectrograms** to visualize frequency content over time.
-- Detect outliers in weather and production data using **Statistical Process Control (SPC)** and **Direct Cosine Transform (DCT)**.
-- Detect anomalies using **Local Outlier Factor (LOF)**.
+- Perform Seasonal-Trend decomposition using LOESS (STL) on energy production data.
+- Generate spectrograms to visualize frequency content over time.
+- Detect outliers in weather and production data using Statistical Process Control (SPC) and Direct Cosine Transform (DCT).
+- Detect anomalies using Local Outlier Factor (LOF).
 - Wrap all analyses in reusable functions with sensible default parameters.
 - Integrate results into Streamlit with interactive visualizations.
 
@@ -119,7 +119,6 @@ with tab3:
 - Implementing STL decomposition and spectrogram visualizations.
 - Designing SPC and LOF analyses for time series data.
 - Troubleshooting parameter choices for DCT filtering and anomaly detection.
-- Writing reusable functions and interactive Streamlit elements.
-- Optimizing plots for clarity and interactivity.
-- Translating project instructions and adapting code to project consignes.
+- Switching from Matplotlib to Plotly.
+- Translating the project into English.
 """)
