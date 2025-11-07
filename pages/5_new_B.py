@@ -82,8 +82,8 @@ def plot_temperature_spc_dct_plotly(temperature_data, time_data, cutoff_frequenc
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=time_data, y=temp_norm, mode='lines', name='Original', line=dict(color='blue')))
     fig.add_trace(go.Scatter(x=time_data, y=dct_norm, mode='lines', name='DCT Filtered', line=dict(color='orange')))
-    fig.add_trace(go.Scatter(x=time_data, y=[upper_bound]*len(time_data), mode='lines', name='Upper Bound', line=dict(color='red', dash='dash')))
-    fig.add_trace(go.Scatter(x=time_data, y=[lower_bound]*len(time_data), mode='lines', name='Lower Bound', line=dict(color='red', dash='dash')))
+    fig.add_trace(go.Scatter(x=time_data, y=[upper_bound]*len(time_data), mode='lines', name='Upper Bound', line=dict(color='green', dash='dash')))
+    fig.add_trace(go.Scatter(x=time_data, y=[lower_bound]*len(time_data), mode='lines', name='Lower Bound', line=dict(color='lightgreen', dash='dash')))
     fig.add_trace(go.Scatter(x=np.array(time_data)[outliers], y=dct_norm[outliers], mode='markers', name='Outliers', marker=dict(color='red', size=6)))
     st.plotly_chart(fig, use_container_width=True)
 
