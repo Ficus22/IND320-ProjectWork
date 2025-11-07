@@ -57,7 +57,7 @@ def download_weather_data(latitude: float, longitude: float, year: int,
 # ==============================
 # Year selection (default 2021)
 # ==============================
-selected_year = st.number_input("Select year:", min_value=1979, max_value=datetime.utcnow().year, value=2021, step=1)
+selected_year = st.number_input("Select year (below 2025):", min_value=1979, max_value=datetime.utcnow().year, value=2021, step=1)
 
 # ==============================
 # Load data
