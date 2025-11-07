@@ -112,7 +112,7 @@ with tab2:
     selected_group_spec = st.selectbox("Select Production Group for Spectrogram", production_groups, key="spec_group")
     
     # Spectrogram parameters
-    window_length = st.number_input("Period (hours) - one week = 168 hours", value=24*7, step=1)
+    window_length = st.number_input("Period (hours) - one week = 168 hours", value=24*7, step=1, key="Window length (hours)")
     window_overlap = st.slider("Window overlap (%)", min_value=0.0, max_value=0.9, value=0.5, step=0.05)
     colorscale = st.selectbox("Colorscale", ["Viridis", "Cividis", "Plasma", "Inferno", "Magma"])
     
