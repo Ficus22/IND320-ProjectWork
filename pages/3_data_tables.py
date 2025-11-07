@@ -37,7 +37,7 @@ PRICE_AREAS = {
     "NO5": {"city": "Bergen", "lat": 60.3913, "lon": 5.3221},
 }
 
-st.title("📊 Weather Data Table for Selected Price Area")
+
 
 # --- Retrieve selected price area from another page ---
 if "selected_price_area" not in st.session_state:
@@ -49,6 +49,9 @@ location = PRICE_AREAS.get(price_area, None)
 if location is None:
     st.error(f"Unknown price area: {price_area}")
     st.stop()
+
+
+st.title(f"📊 Weather Data Table for {PRICE_AREAS[price_area].get('city')}")
 
 # --- Year selection ---
 year = st.number_input("Select year:", min_value=2000, max_value=datetime.now().year, value=2021)

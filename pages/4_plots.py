@@ -5,8 +5,6 @@ import plotly.express as px
 import requests
 from datetime import datetime
 
-st.title("📈 Weather Visualizations (Open-Meteo ERA5)")
-
 # -------------------------
 # Check if a price area was selected on page 2
 # -------------------------
@@ -16,18 +14,27 @@ if "selected_price_area" not in st.session_state:
 
 price_area = st.session_state.selected_price_area
 
-# ==============================
-# Map price areas to lat/lon
-# ==============================
-PRICE_AREA_COORDS = {
-    "NO1": (59.91, 10.75),  # Oslo
-    "NO2": (63.43, 10.39),  # Trondheim
-    "NO3": (63.42, 10.42),  # Exemple
-    "NO4": (58.97, 5.73),   # Bergen
-    "NO5": (69.65, 18.95)   # Tromsø
+# -------------------------
+# Price area info
+# -------------------------
+PRICE_AREAS = {
+    "NO1": {"city": "Oslo", "lat": 59.9139, "lon": 10.7522},
+    "NO2": {"city": "Kristiansand", "lat": 58.1467, "lon": 7.9956},
+    "NO3": {"city": "Trondheim", "lat": 63.4305, "lon": 10.3951},
+    "NO4": {"city": "Tromsø", "lat": 69.6492, "lon": 18.9553},
+    "NO5": {"city": "Bergen", "lat": 60.3913, "lon": 5.3221},
 }
 
-latitude, longitude = PRICE_AREA_COORDS.get(price_area, (59.91, 10.75))
+if price_area not in PRICE_AREAS:
+    st.error(f"Unknown price area: {price_area}")
+    st.stop()
+
+city = PRICE_AREAS[price_area]["city"]
+latitude = PRICE_AREAS[price_area]["lat"]
+longitude = PRICE_AREAS[price_area]["lon"]
+
+st.title(f"📈 Weather Visualizations for {city}")
+st.markdown("Open-Meteo ERA5 data")
 
 # ==============================
 # Function to download Open-Meteo ERA5 data
@@ -55,7 +62,13 @@ def download_weather_data(latitude: float, longitude: float, year: int,
     return df
 
 # Year selection (default 2021)
-selected_year = st.number_input("Select year (below 2025):", min_value=1979, max_value=datetime.utcnow().year, value=2021, step=1)
+selected_year = st.number_input(
+    "Select year (below 2025):",
+    min_value=1979,
+    max_value=datetime.utcnow().year,
+    value=2021,
+    step=1
+)
 
 # ==============================
 # Load data

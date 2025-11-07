@@ -5,9 +5,9 @@ import numpy as np
 import plotly.graph_objects as go
 from scipy.fftpack import dct, idct
 from sklearn.neighbors import LocalOutlierFactor
+from pymongo import MongoClient
 
 st.set_page_config(page_title="🔍 Anomaly & SPC Analysis", layout="wide")
-st.title("🔍 Outlier & Anomaly Analysis")
 
 # -------------------------
 # Check if price area selected on page 2
@@ -19,9 +19,27 @@ if "selected_price_area" not in st.session_state:
 price_area = st.session_state.selected_price_area
 
 # -------------------------
+# Price area info
+# -------------------------
+PRICE_AREAS = {
+    "NO1": {"city": "Oslo", "lat": 59.9139, "lon": 10.7522},
+    "NO2": {"city": "Kristiansand", "lat": 58.1467, "lon": 7.9956},
+    "NO3": {"city": "Trondheim", "lat": 63.4305, "lon": 10.3951},
+    "NO4": {"city": "Tromsø", "lat": 69.6492, "lon": 18.9553},
+    "NO5": {"city": "Bergen", "lat": 60.3913, "lon": 5.3221},
+}
+
+if price_area not in PRICE_AREAS:
+    st.error(f"Unknown price area: {price_area}")
+    st.stop()
+
+city = PRICE_AREAS[price_area]["city"]
+
+st.title(f"🔍 Outlier & Anomaly Analysis for {city}")
+
+# -------------------------
 # Load data (MongoDB / Elhub)
 # -------------------------
-from pymongo import MongoClient
 MONGO_URI = st.secrets["MONGO_URI"]
 client = MongoClient(MONGO_URI)
 db = client["elhub_data"]
@@ -89,49 +107,34 @@ tab1, tab2 = st.tabs(["Outlier/SPC Analysis", "Anomaly/LOF Analysis"])
 
 # --- Tab 1: Outlier/SPC ---
 with tab1:
-    st.header("Outlier / SPC Analysis")
+    st.header(f"Outlier / SPC Analysis for {city}")
     groups = df["production_group"].dropna().unique()
     selected_group = st.selectbox("Select Production Group", groups)
     cutoff_frequency = st.slider("DCT High-pass cutoff frequency", min_value=0.0, max_value=1.0, value=0.3)
     n_std = st.number_input("SPC n_std", value=3, step=1)
 
-    # Filter data by selected price area and production group
     df_tab1 = df[(df["price_area"]==price_area) & (df["production_group"]==selected_group)]
     if df_tab1.empty:
         st.info("No data available for this selection.")
     else:
-        # Ensure start_time is datetime without timezone
         df_tab1["start_time"] = pd.to_datetime(df_tab1["start_time"]).dt.tz_localize(None)
-
-        # Set start_time as index
         df_tab1 = df_tab1.set_index("start_time")
-
-        # Keep only numeric columns and resample hourly
         numeric_cols = df_tab1.select_dtypes(include="number").columns
         df_tab1_resampled = df_tab1[numeric_cols].resample("H").sum().interpolate()
-
-        plot_temperature_spc_dct_plotly(df_tab1_resampled["quantity_kwh"], df_tab1_resampled.index, 
-                                        cutoff_frequency=cutoff_frequency, n_std=n_std)
+        plot_temperature_spc_dct_plotly(df_tab1_resampled["quantity_kwh"], df_tab1_resampled.index, cutoff_frequency=cutoff_frequency, n_std=n_std)
 
 # --- Tab 2: Anomaly/LOF ---
 with tab2:
-    st.header("Anomaly Detection with LOF")
+    st.header(f"Anomaly Detection with LOF for {city}")
     selected_group_lof = st.selectbox("Select Production Group", groups, key="lof_group")
     contamination = st.slider("Expected outliers (%)", min_value=0.0, max_value=10.0, value=1.0)/100
 
-    # Filter data by selected price area and production group
     df_tab2 = df[(df["price_area"]==price_area) & (df["production_group"]==selected_group_lof)]
     if df_tab2.empty:
         st.info("No data available for this selection.")
     else:
-        # Ensure start_time is datetime without timezone
         df_tab2["start_time"] = pd.to_datetime(df_tab2["start_time"]).dt.tz_localize(None)
-
-        # Set start_time as index
         df_tab2 = df_tab2.set_index("start_time")
-
-        # Keep only numeric columns and resample hourly
         numeric_cols = df_tab2.select_dtypes(include="number").columns
         df_tab2_resampled = df_tab2[numeric_cols].resample("H").sum().interpolate()
-
         plot_precipitation_with_lof(df_tab2_resampled["quantity_kwh"], df_tab2_resampled.index, contamination=contamination)
