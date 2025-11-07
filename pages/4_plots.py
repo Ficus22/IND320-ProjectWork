@@ -19,7 +19,6 @@ price_area = st.session_state.selected_price_area
 # ==============================
 # Map price areas to lat/lon
 # ==============================
-# À adapter selon tes zones de prix réelles
 PRICE_AREA_COORDS = {
     "NO1": (59.91, 10.75),  # Oslo
     "NO2": (63.43, 10.39),  # Trondheim
@@ -56,11 +55,15 @@ def download_weather_data(latitude: float, longitude: float, year: int,
     return df
 
 # ==============================
+# Year selection (default 2021)
+# ==============================
+selected_year = st.number_input("Select year:", min_value=1979, max_value=datetime.utcnow().year, value=2021, step=1)
+
+# ==============================
 # Load data
 # ==============================
-current_year = datetime.utcnow().year
 try:
-    df = download_weather_data(latitude, longitude, current_year)
+    df = download_weather_data(latitude, longitude, selected_year)
 except Exception as e:
     st.error(f"Error loading data: {e}")
     st.stop()
