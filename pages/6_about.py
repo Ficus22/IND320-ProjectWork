@@ -4,6 +4,7 @@ import streamlit as st
 st.title("🔍 About")
 st.markdown("""
 **Author**: Esteban Carrasco
+**Link**:[GitHub Source Code](https://github.com/Ficus22/IND320-ProjectWork)
 """)
 
 # -------------------------
@@ -30,9 +31,9 @@ with tab2:
     st.header("IND320 Project - Energy Production Data Analysis")
     st.markdown("""
 **Objectives**:
-- Retrieve and analyze hourly energy production data from the **Elhub API** for Norway in 2022.
-- Store data in **Cassandra** and **MongoDB** for efficient querying and visualization.
-- Create interactive visualizations using **Streamlit** to explore energy production trends.
+- Retrieve and analyze hourly energy production data from the Elhub API for Norway in 2021.
+- Store data in Cassandra and MongoDB for efficient querying and visualization.
+- Create interactive visualizations using Streamlit to explore energy production trends.
 - Include specific analyses of production groups and price areas.
 
 **Technologies Used**:
@@ -43,20 +44,19 @@ with tab2:
 
 **Features Added**:
 - **Data Extraction**: Automated retrieval of energy production data from the Elhub API.
-- **Data Storage**: Integration with **Cassandra** and **MongoDB** for robust data management.
+- **Data Storage**: Integration with Cassandra and MongoDB for robust data management.
 - **Interactive Visualizations**:
   - **Pie charts** showing the distribution of energy production by group.
   - **Line plots** illustrating hourly production trends for selected months and price areas.
 - **User-Friendly Interface**: Filters to select specific price areas, production groups, and months.
 
 **Challenges and Adaptations**:
-- Originally planned with **Apache Spark**, but due to **connection issues**, switched to **Cassandra Python driver** for direct data extraction and insertion.
+- Originally planned with Apache Spark, but due to connection issues, switched to Cassandra Python driver for direct data extraction and insertion.
 - Simplified workflow and reduced dependency issues.
 
-**Links**:
-- [GitHub Source Code](https://github.com/Ficus22/IND320-ProjectWork)
+---
 
-**AI Usage**:
+### **AI Usage**:
 *Le Chat* ([Mistral AI](https://mistral.ai/)) assisted with:
 - Advanced visualizations
 - Translating the project into English
