@@ -65,28 +65,56 @@ with tab1:
     else:
         # STL decomposition
         # S'assurer que start_time est datetime et sans timezone
-        # 1. S'assurer que start_time est datetime et enlever le timezone
         df_area_group["start_time"] = pd.to_datetime(df_area_group["start_time"]).dt.tz_localize(None)
 
-        # 2. Mettre start_time comme index
+        # Mettre start_time comme index
         df_area_group = df_area_group.set_index("start_time")
 
-        # 3. Ne garder que les colonnes numériques
+        # Ne garder que les colonnes numériques
         numeric_cols = df_area_group.select_dtypes(include="number").columns
         df_area_group = df_area_group[numeric_cols].resample("H").sum().interpolate()
 
         stl = STL(df_area_group["quantity_kwh"], period=period, seasonal=seasonal, trend=trend, robust=robust)
         result = stl.fit()
         
-        # Plot
-        fig, axes = plt.subplots(4,1, figsize=(12,8), sharex=True)
-        axes[0].plot(result.observed, color="blue"); axes[0].set_ylabel("Observed")
-        axes[1].plot(result.trend, color="orange"); axes[1].set_ylabel("Trend")
-        axes[2].plot(result.seasonal, color="green"); axes[2].set_ylabel("Seasonal")
-        axes[3].plot(result.resid, color="red"); axes[3].set_ylabel("Residual")
-        plt.xlabel("Time")
-        plt.tight_layout()
-        st.pyplot(fig)
+        #Plot
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=df_area_group.index,
+            y=result.observed,
+            mode='lines',
+            name='Observed'
+        ))
+        fig.add_trace(go.Scatter(
+            x=df_area_group.index,
+            y=result.trend,
+            mode='lines',
+            name='Trend'
+        ))
+        fig.add_trace(go.Scatter(
+            x=df_area_group.index,
+            y=result.seasonal,
+            mode='lines',
+            name='Seasonal'
+        ))
+        fig.add_trace(go.Scatter(
+            x=df_area_group.index,
+            y=result.resid,
+            mode='lines',
+            name='Residual'
+        ))
+
+        fig.update_layout(
+            title=f"STL Decomposition — Area {price_area} · Group {selected_group}",
+            xaxis_title="Time",
+            yaxis_title="kWh",
+            legend_title="Components",
+            height=700
+        )
+
+        st.plotly_chart(fig, use_container_width=True)
+
 
 # -------------------------
 # --- TAB 2: Spectrogram ---
