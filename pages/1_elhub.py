@@ -51,7 +51,7 @@ for pa in price_areas:
 
 # Default selection: N=1
 default_price_area = "NO1"
-default_idx = price_areas.tolist().index(default_price_area) if default_price_area in price_areas else 0
+default_idx = price_areas.index(default_price_area) if default_price_area in price_areas else 0
 
 selected_option = st.selectbox("Select Price Area", price_area_options, index=default_idx)
 
