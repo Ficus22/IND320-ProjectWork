@@ -65,7 +65,7 @@ def calculate_spc_boundaries(data, n_std=3):
     median = np.median(data_array)
     mad = np.median(np.abs(data_array - median))
 
-    sigma = 1.4826 * mad  # <-- FIX !
+    sigma = 1.4826 * mad
     lower_bound = median - n_std * sigma
     upper_bound = median + n_std * sigma
     return lower_bound, upper_bound, median
@@ -74,53 +74,121 @@ def normalize_series(data):
     data = np.asarray(data)
     return (data - data.min()) / (data.max() - data.min())
 
-def plot_temperature_spc_dct_plotly(temperature_data, time_data, cutoff_frequency=0.3, n_std=3):
-    
+def plot_temperature_spc_dct_plotly(
+    temperature_data,
+    time_data,
+    cutoff_frequency=0.3,
+    n_std=3,
+    show_normalized=False
+):
+    """
+    SPC with DCT filtering + optional normalized display on secondary axis.
+    """
+
     temp_array = np.asarray(temperature_data)
 
-    # High-pass filtering
+    # --------- DCT FILTER ----------
     dct_filtered = high_pass_filter(temp_array, cutoff_frequency)
 
-    # SPC boundaries computed in *raw values*
+    # --------- SPC BOUNDARIES (correct MAD→sigma) ----------
     lower, upper, median = calculate_spc_boundaries(dct_filtered, n_std)
 
+    # --------- NORMALIZED SIGNALS (for display only) ----------
+    if show_normalized:
+        temp_norm = (temp_array - temp_array.min()) / (temp_array.max() - temp_array.min())
+        dct_norm = (dct_filtered - dct_filtered.min()) / (dct_filtered.max() - dct_filtered.min())
+
+    # --------- PLOT ----------
     fig = go.Figure()
 
-    # Original data
+    # Original data (real kWh)
     fig.add_trace(go.Scatter(
-        x=time_data, y=temp_array,
-        mode='lines', name='Original (kWh)',
-        line=dict(color='blue')
+        x=time_data,
+        y=temp_array,
+        mode='lines',
+        name='Original (kWh)',
+        line=dict(color='blue'),
+        yaxis="y1"
     ))
 
-    # DCT signal
+    # DCT filtered (real values)
     fig.add_trace(go.Scatter(
-        x=time_data, y=dct_filtered,
-        mode='lines', name='DCT filtered (kWh)',
-        line=dict(color='orange')
+        x=time_data,
+        y=dct_filtered,
+        mode='lines',
+        name='DCT filtered (kWh)',
+        line=dict(color='orange'),
+        yaxis="y1"
     ))
 
     # SPC bounds
     fig.add_trace(go.Scatter(
-        x=time_data, y=[upper]*len(time_data),
-        mode='lines', name='Upper Bound (SPC)',
-        line=dict(color='green', dash='dash')
+        x=time_data,
+        y=[upper]*len(time_data),
+        mode='lines',
+        name='Upper Bound (SPC)',
+        line=dict(color='green', dash='dash'),
+        yaxis="y1"
     ))
     
     fig.add_trace(go.Scatter(
-        x=time_data, y=[lower]*len(time_data),
-        mode='lines', name='Lower Bound (SPC)',
-        line=dict(color='red', dash='dash')
+        x=time_data,
+        y=[lower]*len(time_data),
+        mode='lines',
+        name='Lower Bound (SPC)',
+        line=dict(color='red', dash='dash'),
+        yaxis="y1"
     ))
 
-    # Outliers
+    # Outliers in real values
     outliers = (dct_filtered < lower) | (dct_filtered > upper)
     fig.add_trace(go.Scatter(
         x=np.array(time_data)[outliers],
         y=dct_filtered[outliers],
-        mode='markers', name='Outliers',
-        marker=dict(color='red', size=7)
+        mode='markers',
+        name='Outliers',
+        marker=dict(color='red', size=7),
+        yaxis="y1"
     ))
+
+    # --------- OPTIONAL NORMALIZED DISPLAY ----------
+    if show_normalized:
+        fig.add_trace(go.Scatter(
+            x=time_data,
+            y=temp_norm,
+            mode='lines',
+            name='Original (normalized)',
+            line=dict(color='blue', dash='dot'),
+            yaxis="y2"
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=time_data,
+            y=dct_norm,
+            mode='lines',
+            name='DCT filtered (normalized)',
+            line=dict(color='orange', dash='dot'),
+            yaxis="y2"
+        ))
+
+    # --------- LAYOUT ----------
+    fig.update_layout(
+        title=f"SPC + DCT Analysis (n_std={n_std})",
+        hovermode="x unified",
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+        yaxis=dict(
+            title="kWh (real values)",
+            side="left"
+        ),
+        yaxis2=dict(
+            title="Normalized (0–1)",
+            overlaying="y",
+            side="right",
+            showgrid=False,
+            range=[-0.05, 1.05],
+            visible=show_normalized
+        )
+    )
 
     st.plotly_chart(fig, use_container_width=True)
 
@@ -149,7 +217,11 @@ with tab1:
     groups = df["production_group"].dropna().unique()
     selected_group = st.selectbox("Select Production Group", groups)
     cutoff_frequency = st.slider("DCT High-pass cutoff frequency", min_value=0.0, max_value=1.0, value=0.3)
-    n_std = st.number_input("SPC n_std", value=3, step=1)
+    n_std = st.number_input("SPC sensitivity", value=3, step=1)
+
+    show_normalized = st.checkbox(
+    "Display normalized output", 
+    value=False)
 
     df_tab1 = df[(df["price_area"]==price_area) & (df["production_group"]==selected_group)]
     if df_tab1.empty:
@@ -159,7 +231,14 @@ with tab1:
         df_tab1 = df_tab1.set_index("start_time")
         numeric_cols = df_tab1.select_dtypes(include="number").columns
         df_tab1_resampled = df_tab1[numeric_cols].resample("H").sum().interpolate()
-        plot_temperature_spc_dct_plotly(df_tab1_resampled["quantity_kwh"], df_tab1_resampled.index, cutoff_frequency=cutoff_frequency, n_std=n_std)
+        plot_temperature_spc_dct_plotly(
+            df_tab1_resampled["quantity_kwh"],
+            df_tab1_resampled.index,
+            cutoff_frequency=cutoff_frequency,
+            n_std=n_std,
+            show_normalized=show_normalized
+        )
+
 
 # --- Tab 2: Anomaly/LOF ---
 with tab2:
