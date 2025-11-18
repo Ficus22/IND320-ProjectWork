@@ -157,21 +157,6 @@ def plot_temperature_spc_dct_plotly(
             line=dict(color='orange')
         ))
 
-        # SPC bounds
-        fig.add_trace(go.Scatter(
-            x=time_data,
-            y=[upper]*len(time_data),
-            mode='lines',
-            name='Upper Bound (SPC)',
-            line=dict(color='green', dash='dash')
-        ))
-        fig.add_trace(go.Scatter(
-            x=time_data,
-            y=[lower]*len(time_data),
-            mode='lines',
-            name='Lower Bound (SPC)',
-            line=dict(color='red', dash='dash')
-        ))
 
         # Outliers
         outliers = (dct_filtered < lower) | (dct_filtered > upper)
