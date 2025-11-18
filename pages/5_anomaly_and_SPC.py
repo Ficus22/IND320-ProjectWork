@@ -60,32 +60,70 @@ def high_pass_filter(data, cutoff_frequency=0.3):
     return idct(dct_coeffs, type=2, norm='ortho')
 
 def calculate_spc_boundaries(data, n_std=3):
+    """SPC boundaries using MAD converted to sigma."""
     data_array = np.asarray(data)
     median = np.median(data_array)
     mad = np.median(np.abs(data_array - median))
-    lower_bound = median - n_std*mad
-    upper_bound = median + n_std*mad
-    return lower_bound, upper_bound
+
+    sigma = 1.4826 * mad  # <-- FIX !
+    lower_bound = median - n_std * sigma
+    upper_bound = median + n_std * sigma
+    return lower_bound, upper_bound, median
 
 def normalize_series(data):
     data = np.asarray(data)
     return (data - data.min()) / (data.max() - data.min())
 
 def plot_temperature_spc_dct_plotly(temperature_data, time_data, cutoff_frequency=0.3, n_std=3):
+    
     temp_array = np.asarray(temperature_data)
+
+    # High-pass filtering
     dct_filtered = high_pass_filter(temp_array, cutoff_frequency)
-    temp_norm = normalize_series(temp_array)
-    dct_norm = normalize_series(dct_filtered)
-    lower_bound, upper_bound = calculate_spc_boundaries(dct_norm, n_std)
-    outliers = (dct_norm < lower_bound) | (dct_norm > upper_bound)
+
+    # SPC boundaries computed in *raw values*
+    lower, upper, median = calculate_spc_boundaries(dct_filtered, n_std)
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=time_data, y=temp_norm, mode='lines', name='Original', line=dict(color='blue')))
-    fig.add_trace(go.Scatter(x=time_data, y=dct_norm, mode='lines', name='DCT Filtered', line=dict(color='orange')))
-    fig.add_trace(go.Scatter(x=time_data, y=[upper_bound]*len(time_data), mode='lines', name='Upper Bound', line=dict(color='green', dash='dash')))
-    fig.add_trace(go.Scatter(x=time_data, y=[lower_bound]*len(time_data), mode='lines', name='Lower Bound', line=dict(color='lightgreen', dash='dash')))
-    fig.add_trace(go.Scatter(x=np.array(time_data)[outliers], y=dct_norm[outliers], mode='markers', name='Outliers', marker=dict(color='red', size=6)))
+
+    # Original data
+    fig.add_trace(go.Scatter(
+        x=time_data, y=temp_array,
+        mode='lines', name='Original (kWh)',
+        line=dict(color='blue')
+    ))
+
+    # DCT signal
+    fig.add_trace(go.Scatter(
+        x=time_data, y=dct_filtered,
+        mode='lines', name='DCT filtered (kWh)',
+        line=dict(color='orange')
+    ))
+
+    # SPC bounds
+    fig.add_trace(go.Scatter(
+        x=time_data, y=[upper]*len(time_data),
+        mode='lines', name='Upper Bound (SPC)',
+        line=dict(color='green', dash='dash')
+    ))
+    
+    fig.add_trace(go.Scatter(
+        x=time_data, y=[lower]*len(time_data),
+        mode='lines', name='Lower Bound (SPC)',
+        line=dict(color='red', dash='dash')
+    ))
+
+    # Outliers
+    outliers = (dct_filtered < lower) | (dct_filtered > upper)
+    fig.add_trace(go.Scatter(
+        x=np.array(time_data)[outliers],
+        y=dct_filtered[outliers],
+        mode='markers', name='Outliers',
+        marker=dict(color='red', size=7)
+    ))
+
     st.plotly_chart(fig, use_container_width=True)
+
 
 def plot_precipitation_with_lof(precipitation, time, contamination=0.01):
     precip_array = np.asarray(precipitation)
