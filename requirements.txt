@@ -9,3 +9,4 @@ statsmodels
 scipy
 numpy
 scikit-learn
+shapely
