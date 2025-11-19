@@ -19,8 +19,16 @@ data = list(collection.find({}))
 df = pd.DataFrame(data)
 
 # Convert start_time to datetime if necessary
-if not pd.api.types.is_datetime64_any_dtype(df["start_time"]):
-    df["start_time"] = pd.to_datetime(df["start_time"])
+if "start_time" in df.columns:
+    if not pd.api.types.is_datetime64_any_dtype(df["start_time"]):
+        df["start_time"] = pd.to_datetime(df["start_time"], errors="coerce")  # `errors="coerce"` will convert invalid parsing to NaT
+    # Check if conversion was successful
+    if not pd.api.types.is_datetime64_any_dtype(df["start_time"]):
+        st.error("Failed to convert 'start_time' to datetime. Check your data.")
+        st.stop()
+else:
+    st.error("Column 'start_time' not found in DataFrame.")
+    st.stop()
 
 st.title("⚡Energy Production in 2021")
 st.markdown("Analyze monthly production trends and energy distribution by production group.")
