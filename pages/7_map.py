@@ -6,6 +6,8 @@ import plotly.express as px
 from shapely.geometry import Point, shape
 from pymongo import MongoClient
 import streamlit.components.v1 as components
+from streamlit_plotly_events import plotly_events
+
 
 # ============================================================
 # Page title
@@ -87,7 +89,14 @@ fig = px.choropleth_mapbox(
 if st.session_state.selected_area:
     fig.update_traces(marker_line_color="red", marker_line_width=4)
 
-st.plotly_chart(fig, use_container_width=True)
+clicked_points = plotly_events(fig, click_event=True, hover_event=False)
+
+if clicked_points:
+    lat = clicked_points[0]["lat"]
+    lon = clicked_points[0]["lon"]
+    st.session_state.clicked_point = (lat, lon)
+    st.session_state.selected_area = detect_area(lon, lat)
+
 
 # ============================================================
 # Inject JS to capture Plotly click
