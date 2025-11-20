@@ -6,6 +6,8 @@ import statsmodels.api as sm
 from datetime import datetime, timedelta
 from pymongo import MongoClient
 from scipy.stats import zscore
+import requests
+
 
 # -------------------------------------------------------
 # Page configuration
