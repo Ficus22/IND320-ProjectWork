@@ -102,6 +102,8 @@ if series_energy.empty:
 # -------------------------------------------------------
 # Weather loader (Open-Meteo ERA5)
 # -------------------------------------------------------
+OPENMETEO_ERA5 = "https://archive-api.open-meteo.com/v1/era5"
+
 @st.cache_data
 def download_weather_data(lat: float, lon: float, start_date: str, end_date: str,
                           hourly=("temperature_2m", "precipitation", "wind_speed_10m", "wind_gusts_10m", "wind_direction_10m")) -> pd.DataFrame:
