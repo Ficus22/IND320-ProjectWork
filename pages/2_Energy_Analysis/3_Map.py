@@ -68,7 +68,7 @@ def app():
     # -----------------------
     # Settings (on page, not sidebar)
     # -----------------------
-    set_col, info_col = st.columns([2.4, 1])
+    set_col, info_col = st.columns([1, 1])
     with set_col:
         st.subheader("Settings")
         mode = st.radio("Select data type", ["Production", "Consumption"])
@@ -147,7 +147,7 @@ def app():
         icon=folium.Icon(color="red")
     ).add_to(m)
     # Capture click
-    out = st_folium(m, key="map", height=650)
+    out = st_folium(m, key="map", height=750)
     if out and out.get("last_clicked"):
         lat = out["last_clicked"]["lat"]
         lon = out["last_clicked"]["lng"]
