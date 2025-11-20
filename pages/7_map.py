@@ -23,6 +23,21 @@ def load_geojson(path="data/price_zones.geojson"):
 
 geojson_data = load_geojson()
 
+# Normalize GeoJSON names (remove spaces: "NO 2" -> "NO2")
+for f in geojson_data["features"]:
+    if "ElSpotOmr" in f["properties"]:
+        f["properties"]["ElSpotOmr"] = f["properties"]["ElSpotOmr"].replace(" ", "").upper()
+
+# Assign a proper feature.id using OBJECTID (or fallback index)
+for i, f in enumerate(geojson_data["features"]):
+    props = f.get("properties", {})
+    if "OBJECTID" in props:
+        f["id"] = props["OBJECTID"]
+    else:
+        f["id"] = i  # fallback if none exists
+
+
+
 # -----------------------
 # Build id -> name mapping (cached)
 # -----------------------
@@ -119,30 +134,18 @@ else:
 # We map feature names (id_to_name[fid]) to price_area codes in mean_df
 # -----------------------
 value_map = {}
-for fid, name in id_to_name.items():
-    # try direct match: name equals price_area (NO1..NO5)
-    matched = mean_df[mean_df["price_area"].astype(str).str.upper() == str(name).upper()]
-    if not matched.empty:
-        value = float(matched["quantity_kwh"].iloc[0])
-        value_map[fid] = value
+for f in geojson_data["features"]:
+    name = f["properties"].get("ElSpotOmr")
+    fid = f.get("id")
+    if name is None or fid is None:
         continue
-    # else try if name appears inside price_area or vice versa
-    matched2 = mean_df[mean_df["price_area"].astype(str).str.upper().str.contains(str(name).upper())]
-    if not matched2.empty:
-        value_map[fid] = float(matched2["quantity_kwh"].iloc[0])
-        continue
-    # fallback: try matching by numeric id (if price_area stored as id in df)
-    try:
-        if int(fid) in list(map(int, mean_df["price_area"].dropna().astype(str).tolist())):
-            # map by numeric id string match
-            val = mean_df[mean_df["price_area"].astype(str) == str(fid)]["quantity_kwh"]
-            if not val.empty:
-                value_map[fid] = float(val.iloc[0])
-                continue
-    except Exception:
-        pass
-    # default: NaN (will be shown as missing)
-    value_map[fid] = None
+    # Match with df price_area (NO1..NO5)
+    match = mean_df[mean_df["price_area"].str.upper() == name]
+    if not match.empty:
+        value_map[fid] = float(match["quantity_kwh"].iloc[0])
+    else:
+        value_map[fid] = None
+
 
 # -----------------------
 # Session state for pin + selected feature
@@ -176,7 +179,7 @@ with map_col:
         geo_data=geojson_data,
         data=df_vals,
         columns=["id", "value"],
-        key_on="feature.id",
+        key_on="feature.id",   # this now works!
         fill_color="YlOrRd",
         fill_opacity=0.5,
         line_opacity=0.6,
@@ -184,6 +187,7 @@ with map_col:
         legend_name="Mean kWh (over selected interval)",
         highlight=True
     )
+
     choropleth.add_to(m)
 
     # Highlight the selected polygon outline (red)
