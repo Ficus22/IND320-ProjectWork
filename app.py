@@ -30,13 +30,13 @@ PAGES_DIR = "pages"
 # Utilities for cleaning names
 # =========================================================
 def clean_name(name: str) -> str:
-    """Remove initial numbers & underscores and format nicely."""
+    """Remove prefix numbers/underscore and clean formatting."""
     name = name.replace(".py", "")
-    parts = name.split("_")[1:]  # drop first prefix number/emoji
+    parts = name.split("_")[1:]  # remove first block: 1_, 2_, etc.
     return " ".join(parts).strip()
 
 # =========================================================
-# Find pages by folder
+# Load all pages by folder
 # =========================================================
 def list_pages():
     pages = {}
@@ -51,33 +51,39 @@ def list_pages():
     return pages
 
 # =========================================================
-# Navigation Components
+# Sidebar Navigation UI
 # =========================================================
 def sidebar_menu(pages_dict):
-    st.sidebar.title("📌 Navigation")
+    st.sidebar.title("Navigation")
 
     # ---- HOME BUTTON ----
     if st.sidebar.button("🏠 Home"):
         st.session_state["current_page"] = None
         st.session_state["current_folder"] = None
-        st.experimental_rerun()
+        st.rerun()
 
     st.sidebar.markdown("---")
 
-    # ---- FOLDERS & PAGES (as clickable buttons) ----
-    for folder, files in pages_dict.items():
-        folder_clean = clean_name(folder)
-        st.sidebar.markdown(f"### 📁 **{folder_clean}**")
+    # ---- Folder selectbox ----
+    folder_list = list(pages_dict.keys())
+    folder_clean_list = [clean_name(f) for f in folder_list]
 
-        for file in files:
-            file_clean = clean_name(file)
-            if st.sidebar.button(f"🔹 {file_clean}"):
-                st.session_state["current_page"] = file
-                st.session_state["current_folder"] = folder
-                st.experimental_rerun()
+    selected_clean = st.sidebar.selectbox("📁 Section", folder_clean_list)
+    selected_folder = folder_list[folder_clean_list.index(selected_clean)]
+    st.session_state["current_folder"] = selected_folder
 
-        st.sidebar.markdown("---")
+    st.sidebar.markdown(f"### 📂 {clean_name(selected_folder)}")
 
+    # ---- Buttons for pages ----
+    for file in pages_dict[selected_folder]:
+        label = f"🔹 {clean_name(file)}"
+        if st.sidebar.button(label):
+            st.session_state["current_page"] = file
+            st.rerun()
+
+# =========================================================
+# Load current page
+# =========================================================
 def load_page(folder, file):
     module_path = f"{PAGES_DIR}.{folder}.{file.replace('.py', '')}"
     module = importlib.import_module(module_path)
@@ -89,12 +95,13 @@ def load_page(folder, file):
 pages_dict = list_pages()
 sidebar_menu(pages_dict)
 
-if "current_page" in st.session_state and st.session_state["current_page"] is not None:
+# If a user selected a page, load it
+if st.session_state.get("current_page"):
     load_page(st.session_state["current_folder"], st.session_state["current_page"])
     st.stop()
 
 # =========================================================
-# 📌 Default Home Page
+# HOME PAGE CONTENT
 # =========================================================
 st.title("🌦️ Weather Dashboard - IND320")
 
@@ -110,11 +117,17 @@ You can explore the following pages:
 Check out the project resources below:
 """)
 
+# =========================
+# Links
+# =========================
 st.markdown("""
-- 🌐 [GitHub Repository](https://github.com/Ficus22/IND320-ProjectWork)
-- 🚀 [Live Streamlit App](https://ind320-projectwork-esteban-carrasco.streamlit.app)
+- [GitHub Repository](https://github.com/Ficus22/IND320-ProjectWork)
+- [Live Streamlit App](https://ind320-projectwork-esteban-carrasco.streamlit.app)
 """)
 
+# =========================
+# Logo / Image
+# =========================
 st.image(
     "https://nobel.boku.ac.at/wp-content/uploads/2020/03/nmbu_logo_eng_rgb-768x348.jpg",
     width=500
