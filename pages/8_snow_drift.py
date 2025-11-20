@@ -21,13 +21,12 @@ Qt represents the **snow mass transported by wind per meter**. We show **yearly 
 # ---------------------------
 # Map selection check
 # ---------------------------
-if "selected_feature_id" not in st.session_state or st.session_state.selected_feature_id is None:
+if "selected_feature_name" not in st.session_state or st.session_state.selected_feature_name is None:
     st.warning("Please select a location on the map first!")
     st.stop()
 
-lat, lon = st.session_state.last_pin
-fid = st.session_state.selected_feature_id
-st.write(f"Selected location: ID={fid}, Lat={lat:.3f}, Lon={lon:.3f}")
+location_name = st.session_state.selected_feature_name
+st.write(f"Selected location: **{location_name}**")
 
 # ---------------------------
 # Year range selector
@@ -121,7 +120,9 @@ dfs = []
 with st.spinner("Downloading weather data..."):
     for year in range(start_year, end_year + 1):
         try:
-            df_year = download_weather_data(lat, lon, year)
+            df_year = download_weather_data(
+                st.session_state.last_pin[0], st.session_state.last_pin[1], year
+            )
             df_year['season'] = df_year['time'].apply(lambda dt: dt.year if dt.month >= 7 else dt.year - 1)
             dfs.append(df_year)
         except Exception as e:
@@ -153,31 +154,30 @@ yearly_df["Qt_tonnes"] = yearly_df["Qt (kg/m)"] / 1000
 # ---------------------------
 # Monthly snow drift
 # ---------------------------
-df_all['year_month'] = df_all['time'].dt.to_period('M')
+df_all['month'] = df_all['time'].dt.month
 monthly_results_list = []
 
-for ym, group in df_all.groupby('year_month'):
-    group = group.copy()
-    group['Swe_hourly'] = group.apply(
-        lambda row: row['precipitation'] if row['temperature_2m'] < 1 else 0, axis=1
-    )
-    total_Swe = group['Swe_hourly'].sum()
-    wind_speeds = group["wind_speed_10m"].tolist()
-    result = compute_snow_transport(T, F, theta, total_Swe, wind_speeds)
-    result['year_month'] = ym.to_timestamp()
-    monthly_results_list.append(result)
+for season, group in df_all.groupby('season'):
+    for month, month_group in group.groupby('month'):
+        month_group = month_group.copy()
+        month_group['Swe_hourly'] = month_group.apply(
+            lambda row: row['precipitation'] if row['temperature_2m'] < 1 else 0, axis=1
+        )
+        total_Swe = month_group['Swe_hourly'].sum()
+        wind_speeds = month_group["wind_speed_10m"].tolist()
+        result = compute_snow_transport(T, F, theta, total_Swe, wind_speeds)
+        result['season'] = f"{season}"
+        result['month'] = month
+        monthly_results_list.append(result)
 
 monthly_df = pd.DataFrame(monthly_results_list)
 monthly_df["Qt_tonnes"] = monthly_df["Qt (kg/m)"] / 1000
 
 # ---------------------------
-# Plot yearly + monthly Qt
+# Plot yearly + monthly Qt (shared x-axis)
 # ---------------------------
-st.subheader("Snow Drift Qt Over Time")
-st.markdown("""
-- **Yearly Qt (blue)**: total snow transport for each season  
-- **Monthly Qt (orange, dashed)**: snow transport per month
-""")
+st.subheader("Snow Drift Qt Over Seasons")
+st.markdown("Monthly Qt (orange) is plotted **per season** for comparison with yearly Qt (blue).")
 
 fig_combined = go.Figure()
 
@@ -190,18 +190,18 @@ fig_combined.add_trace(go.Scatter(
     line=dict(color='blue', width=3)
 ))
 
-# Monthly Qt
+# Monthly Qt per season
 fig_combined.add_trace(go.Scatter(
-    x=monthly_df['year_month'],
+    x=monthly_df['season'],
     y=monthly_df['Qt_tonnes'],
-    mode='lines+markers',
+    mode='markers',
     name='Monthly Qt (tonnes/m)',
-    line=dict(color='orange', width=2, dash='dash')
+    marker=dict(color='orange', size=8, symbol='circle')
 ))
 
 fig_combined.update_layout(
-    title="Snow Drift Transport (Qt) Over Time",
-    xaxis_title="Time",
+    title="Snow Drift Transport (Qt) per Season",
+    xaxis_title="Season",
     yaxis_title="Qt (tonnes/m)",
     legend=dict(x=0.01, y=0.99),
     template="plotly_white"
@@ -210,7 +210,7 @@ fig_combined.update_layout(
 st.plotly_chart(fig_combined, use_container_width=True)
 
 # ---------------------------
-# Wind rose calculation
+# Wind rose (reverted to original)
 # ---------------------------
 st.subheader("Average Wind Rose")
 st.markdown("The wind rose shows the **directional distribution of snow transport** (Qt).")
@@ -242,14 +242,12 @@ fig_rose = go.Figure(go.Barpolar(
     opacity=0.8
 ))
 
-# Improved windrose layout
 fig_rose.update_layout(
     polar=dict(
-        radialaxis=dict(title="Qt (tonnes/m)", tickangle=45),
-        angularaxis=dict(direction="clockwise", rotation=90, tickmode='array', tickvals=angles, ticktext=directions, tickfont=dict(size=10))
+        radialaxis=dict(title="Qt (tonnes/m)"),
+        angularaxis=dict(direction="clockwise", rotation=90, tickmode='array', tickvals=angles, ticktext=directions)
     ),
-    title=f"Average Directional Distribution of Snow Transport<br>Overall Qt: {overall_avg/1000:.1f} tonnes/m",
-    template="plotly_white"
+    title=f"Average Directional Distribution of Snow Transport<br>Overall Qt: {overall_avg/1000:.1f} tonnes/m"
 )
 
 st.plotly_chart(fig_rose, use_container_width=True)
