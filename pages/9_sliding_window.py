@@ -192,7 +192,7 @@ if run_button:
     series_energy = prepare_energy_series(df_energy, price_area, freq)
     lat, lon = PRICE_AREA_COORDS[price_area]
 
-    start_date, end_date = "2015-01-01", f"{pd.Timestamp.utcnow().year}-12-31"
+    start_date, end_date = "2018-01-01", "2024-12-31"
     df_weather = download_weather_data(lat, lon, start_date, end_date)
     series_met = df_weather[met_col].resample(freq).mean()
 
