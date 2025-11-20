@@ -70,7 +70,7 @@ def app():
     # -------------------------------------------------------
     # Exogenous variables (weather)
     # -------------------------------------------------------
-    st.subheader("🌡 Exogenous variables (optional)")
+    st.subheader("🌡 Exogenous variables")
     st.write("You can include weather features as exogenous variables in the SARIMAX model.")
     exog_vars = st.multiselect("Select exogenous variables", options=DEFAULT_HOURLY_VARIABLES)
 
@@ -86,6 +86,18 @@ def app():
     # SARIMAX parameters
     # -------------------------------------------------------
     st.subheader("⚙️ SARIMAX Parameters")
+    st.markdown("""
+**Purpose of SARIMAX Parameters:**
+
+- **AR (p)**: Autoregressive order. Captures the number of lag observations in the model (e.g., `p=1` means the model uses the previous time step to predict the current one).
+- **I (d)**: Integrated order. Controls the differencing needed to make the time series stationary (e.g., `d=1` removes trends).
+- **MA (q)**: Moving Average order. Uses past forecast errors to improve predictions (e.g., `q=1` includes the error from the previous forecast).
+- **Seasonal AR (P)**: Seasonal autoregressive order. Like `p`, but for seasonal patterns (e.g., daily/weekly cycles).
+- **Seasonal I (D)**: Seasonal differencing order. Like `d`, but for seasonal trends.
+- **Seasonal MA (Q)**: Seasonal moving average order. Like `q`, but for seasonal errors.
+- **Seasonal length (s)**: Length of the seasonal cycle (e.g., `s=24` for hourly data with daily seasonality).
+- **Trend component**: Controls deterministic trends in the model (`n`=none, `c`=constant, `t`=linear trend, `ct`=both).
+""")
     col1, col2 = st.columns(2)
     with col1:
         p = st.number_input("AR (p)", min_value=0, value=1)
