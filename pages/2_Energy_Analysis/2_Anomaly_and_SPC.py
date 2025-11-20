@@ -151,7 +151,7 @@ def app():
         st.header(f"Outlier / SPC Analysis for {city}")
 
         year = st.number_input("Year", min_value=MIN_YEAR, max_value=MAX_YEAR, value=DEFAULT_YEAR, step=1)
-        cutoff_frequency = st.slider("DCT high-pass cutoff frequency", 0.0, 1.0, 0.3)
+        cutoff_frequency = st.slider("DCT high-pass cutoff frequency", 0.0, 1.0, 0.01)
         n_std = st.number_input("SPC sensitivity (n_std)", value=3, step=1)
 
         try:
