@@ -70,7 +70,7 @@ def sidebar_menu(pages_dict):
     selected_folder = folder_list[folder_clean_list.index(selected_clean)]
     st.session_state["current_folder"] = selected_folder
 
-    st.sidebar.markdown(f"### Pages in {selected_folder}")
+    st.sidebar.markdown(f"### Pages in {selected_clean}")
 
     # ---- Buttons for pages ----
     for file in pages_dict[selected_folder]:
