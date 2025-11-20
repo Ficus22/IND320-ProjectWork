@@ -122,7 +122,6 @@ def app():
             # --- Retrieve and align the data ---
             series_energy = prepare_energy_series(df_energy, price_area, freq)
             lat, lon = PRICE_AREAS[price_area]["lat"], PRICE_AREAS[price_area]["lon"]
-            start_date, end_date = "2018-01-01", "2024-12-31"
 
             # Download weather data
             df_weather = download_weather_data(lat, lon, DEFAULT_YEAR)
@@ -131,7 +130,28 @@ def app():
                     df_year = download_weather_data(lat, lon, year)
                     df_weather = pd.concat([df_weather, df_year], ignore_index=True)
 
+            # Set 'time' as the index and sort
+            if "time" not in df_weather.columns:
+                st.error("Weather data does not contain a 'time' column.")
+                st.stop()
+
+            df_weather["time"] = pd.to_datetime(df_weather["time"])
+            df_weather = df_weather.set_index("time").sort_index()
+
+            # Check if the selected meteorological column exists
+            if met_col not in df_weather.columns:
+                st.error(f"Meteorological variable '{met_col}' not found in weather data.")
+                st.stop()
+
+            # Resample weather data
             series_met = df_weather[met_col].resample(freq).mean()
+
+            # Check if resampling worked
+            if series_met.empty:
+                st.error("Resampled weather data is empty. Check the frequency and data range.")
+                st.stop()
+
+            # Compute correlation
             corr_series = compute_rolled_corr(series_met, series_energy, window_len, lag)
 
             series_energy_plot = series_energy
