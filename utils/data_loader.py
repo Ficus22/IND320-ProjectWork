@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
 import requests
-from config import PRICE_AREAS, OPENMETEO_ERA5, DEFAULT_HOURLY_VARIABLES
+from .config import PRICE_AREAS, OPENMETEO_ERA5, DEFAULT_HOURLY_VARIABLES
 
 
 # --- MongoDB Data Loader (Cached + Session State) ---
