@@ -25,6 +25,8 @@ MONGO_COLLECTIONS = ["production_data", "consumption_data"]
 
 # --- Default Settings ---
 DEFAULT_YEAR = 2021
+MIN_YEAR = 2018
+MAX_YEAR = 2024
 DEFAULT_PRICE_AREA = "NO1"
 
 # --- Calandar values ---

@@ -4,7 +4,7 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime
 from utils.data_loader import load_weather_data
-from utils.config import PRICE_AREAS, MONTH_NAMES
+from utils.config import PRICE_AREAS, MONTH_NAMES, MAX_YEAR, MIN_YEAR, DEFAULT_YEAR
 
 # -------------------------
 # Check if a price area was selected
@@ -34,9 +34,9 @@ st.markdown("*Open-Meteo ERA5 data*")
 # -------------------------
 selected_year = st.number_input(
     "Select year (below 2025):",
-    min_value=1979,
-    max_value=datetime.now().year,
-    value=2021,
+    min_value=MIN_YEAR,
+    max_value=MAX_YEAR,
+    value=DEFAULT_YEAR,
     step=1
 )
 

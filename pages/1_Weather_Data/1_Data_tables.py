@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from utils.data_loader import load_weather_data
-from utils.config import PRICE_AREAS, DEFAULT_PRICE_AREA
+from utils.config import PRICE_AREAS, DEFAULT_PRICE_AREA, DEFAULT_YEAR, MIN_YEAR, MAX_YEAR
 
 def app():
     st.title("📊 Weather Data Table")
@@ -24,9 +24,9 @@ def app():
     # --- Year selection ---
     year = st.number_input(
         "Select year:",
-        min_value=2000,
-        max_value=datetime.now().year,
-        value=datetime.now().year
+        min_value=MIN_YEAR,
+        max_value=MAX_YEAR,
+        value=DEFAULT_YEAR
     )
 
     city = PRICE_AREAS[price_area]["city"]
