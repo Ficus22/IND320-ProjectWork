@@ -116,7 +116,12 @@ def app():
     # Layout: map + info
     # -----------------------
 
+    st.subheader("Map")
+
+    # Create folium map
     m = folium.Map(location=st.session_state.last_pin, zoom_start=5, tiles="OpenStreetMap")
+
+    # Choropleth
     df_vals = pd.DataFrame({"id": list(value_map.keys()),
                             "value": [v if v is not None else 0 for v in value_map.values()]})
     choropleth = folium.Choropleth(
@@ -132,6 +137,7 @@ def app():
         highlight=True
     )
     choropleth.add_to(m)
+
     # Highlight selected polygon
     if st.session_state.selected_feature_id is not None:
         sel_id = st.session_state.selected_feature_id
@@ -141,19 +147,39 @@ def app():
                 {"type": "FeatureCollection", "features": sel_feats},
                 style_function=lambda f: {"fillOpacity": 0, "color": "red", "weight": 3}
             ).add_to(m)
+
     # Pin marker
     folium.Marker(
         location=st.session_state.last_pin,
         icon=folium.Icon(color="red")
     ).add_to(m)
+
+    # Display map full-width, taller height
+    out = st_folium(m, key="map", height=850, width=1200)
+
     # Capture click
-    out = st_folium(m, key="map", height=750)
     if out and out.get("last_clicked"):
         lat = out["last_clicked"]["lat"]
         lon = out["last_clicked"]["lng"]
         st.session_state.last_pin = [lat, lon]
         st.session_state.selected_feature_id = find_feature_id(lon, lat)
         st.rerun()
+
+    # -----------------------
+    # Info section below map
+    # -----------------------
+    st.subheader("Selection Info")
+    st.write(f"Lat: {st.session_state.last_pin[0]:.6f}")
+    st.write(f"Lon: {st.session_state.last_pin[1]:.6f}")
+    fid = st.session_state.selected_feature_id
+    if fid is None:
+        st.write("Outside known features.")
+    else:
+        area_name = id_to_name.get(fid, f"ID {fid}")
+        val = value_map.get(fid)
+        st.write(f"Area: **{area_name}**")
+        st.write(f"Mean {mode} (kWh): **{val if val is not None else 'n/a'}**")
+
 
     with info_col:
         st.subheader("Selection")
