@@ -35,7 +35,7 @@ if "selected_feature_id" not in st.session_state or st.session_state.selected_fe
 
 lat, lon = st.session_state.last_pin
 fid = st.session_state.selected_feature_id
-st.write(f"Selected location: ID={fid}, Lat={lat:.3f}, Lon={lon:.3f}, city={PRICE_AREAS[fid]}")
+st.write(f"Selected location: {PRICE_AREAS[fid]}")
 
 # ---------------------------
 # Year range selector
@@ -183,35 +183,54 @@ monthly_df = pd.DataFrame(monthly_results_list)
 monthly_df["Qt_tonnes"] = monthly_df["Qt (kg/m)"] / 1000
 
 # ---------------------------
-# Plot yearly + monthly Qt (shared x-axis)
+# Plot yearly + monthly Qt (shared x-axis with months)
 # ---------------------------
-st.subheader("Snow Drift Qt Over Seasons")
-st.markdown("Monthly Qt (orange) is plotted **per season** for comparison with yearly Qt (blue).")
+st.subheader("Snow Drift Qt Over Seasons and Months")
+st.markdown("Yearly Qt (blue) is shown at the first month of each season, and monthly Qt (orange) shows each month individually.")
+
+# Create a continuous monthly index for the x-axis
+# Example: for 2021-2024, July 2021 → 1, August 2021 → 2, ..., June 2024 → N
+monthly_df = monthly_df.sort_values(['season', 'month'])
+monthly_df['month_index'] = np.arange(1, len(monthly_df) + 1)
+
+# Yearly Qt aligned to the first month of each season
+yearly_df = yearly_df.sort_values('season')
+yearly_df['month_index'] = monthly_df.groupby('season')['month_index'].min().values
 
 fig_combined = go.Figure()
 
 # Yearly Qt
 fig_combined.add_trace(go.Scatter(
-    x=yearly_df['season'],
+    x=yearly_df['month_index'],
     y=yearly_df['Qt_tonnes'],
     mode='lines+markers',
     name='Yearly Qt (tonnes/m)',
     line=dict(color='blue', width=3)
 ))
 
-# Monthly Qt per season
+# Monthly Qt
 fig_combined.add_trace(go.Scatter(
-    x=monthly_df['season'],
+    x=monthly_df['month_index'],
     y=monthly_df['Qt_tonnes'],
-    mode='markers',
+    mode='markers+lines',
     name='Monthly Qt (tonnes/m)',
-    marker=dict(color='orange', size=8, symbol='circle')
+    marker=dict(color='orange', size=8, symbol='circle'),
+    line=dict(color='orange', width=1, dash='dot')
 ))
 
+# X-axis labels: show month/year at reasonable intervals
+month_labels = monthly_df[['month_index','month','season']].drop_duplicates()
+month_labels['label'] = month_labels.apply(lambda row: f"{row['month']}/{row['season'].split('-')[0]}", axis=1)
+
 fig_combined.update_layout(
-    title="Snow Drift Transport (Qt) per Season",
-    xaxis_title="Season",
+    title="Snow Drift Transport (Qt) per Season and Month",
+    xaxis_title="Month / Season Start",
     yaxis_title="Qt (tonnes/m)",
+    xaxis=dict(
+        tickmode='array',
+        tickvals=month_labels['month_index'],
+        ticktext=month_labels['label']
+    ),
     legend=dict(x=0.01, y=0.99),
     template="plotly_white"
 )
