@@ -73,7 +73,7 @@ def download_weather_data(latitude: float, longitude: float, year: int,
     return df
 
 # ---------------------------
-# Snow drift calculation functions
+# Snow drift functions (from Snow_drift.py)
 # ---------------------------
 def compute_Qupot(hourly_wind_speeds, dt=3600):
     return sum((u ** 3.8) * dt for u in hourly_wind_speeds) / 233847
@@ -113,8 +113,7 @@ def compute_yearly_results(df, T, F, theta):
             continue
         df_season = df_season.copy()
         df_season['Swe_hourly'] = df_season.apply(
-            lambda row: row['precipitation'] if row['temperature_2m'] < 1 else 0, axis=1
-        )
+            lambda row: row['precipitation'] if row['temperature_2m'] < 1 else 0, axis=1)
         total_Swe = df_season['Swe_hourly'].sum()
         wind_speeds = df_season["wind_speed_10m"].tolist()
         result = compute_snow_transport(T, F, theta, total_Swe, wind_speeds)
@@ -129,9 +128,7 @@ dfs = []
 with st.spinner("Downloading weather data..."):
     for year in range(start_year, end_year + 1):
         try:
-            df_year = download_weather_data(
-                st.session_state.last_pin[0], st.session_state.last_pin[1], year
-            )
+            df_year = download_weather_data(lat, lon, year)
             df_year['season'] = df_year['time'].apply(lambda dt: dt.year if dt.month >= 7 else dt.year - 1)
             dfs.append(df_year)
         except Exception as e:
@@ -141,18 +138,14 @@ if not dfs:
     st.stop()
 
 df_all = pd.concat(dfs, ignore_index=True)
-df_all['time'] = pd.to_datetime(df_all['time'], errors='coerce', utc=True)
 
 # ---------------------------
-# Snow drift parameters
+# Compute yearly snow drift
 # ---------------------------
 T = 3000
 F = 30000
 theta = 0.5
 
-# ---------------------------
-# Yearly snow drift
-# ---------------------------
 yearly_df = compute_yearly_results(df_all, T, F, theta)
 if yearly_df.empty:
     st.warning("No snow drift data available for the selected year range.")
@@ -161,88 +154,23 @@ if yearly_df.empty:
 yearly_df["Qt_tonnes"] = yearly_df["Qt (kg/m)"] / 1000
 
 # ---------------------------
-# Monthly snow drift
+# Plot Qt over seasons with Plotly
 # ---------------------------
-df_all['month'] = df_all['time'].dt.month
-monthly_results_list = []
-
-for season, group in df_all.groupby('season'):
-    for month, month_group in group.groupby('month'):
-        month_group = month_group.copy()
-        month_group['Swe_hourly'] = month_group.apply(
-            lambda row: row['precipitation'] if row['temperature_2m'] < 1 else 0, axis=1
-        )
-        total_Swe = month_group['Swe_hourly'].sum()
-        wind_speeds = month_group["wind_speed_10m"].tolist()
-        result = compute_snow_transport(T, F, theta, total_Swe, wind_speeds)
-        result['season'] = f"{season}"
-        result['month'] = month
-        monthly_results_list.append(result)
-
-monthly_df = pd.DataFrame(monthly_results_list)
-monthly_df["Qt_tonnes"] = monthly_df["Qt (kg/m)"] / 1000
-
-# ---------------------------
-# Plot yearly + monthly Qt (shared x-axis with months)
-# ---------------------------
-st.subheader("Snow Drift Qt Over Seasons and Months")
-st.markdown("Yearly Qt (blue) is shown at the first month of each season, and monthly Qt (orange) shows each month individually.")
-
-# Create a continuous monthly index for the x-axis
-# Example: for 2021-2024, July 2021 → 1, August 2021 → 2, ..., June 2024 → N
-monthly_df = monthly_df.sort_values(['season', 'month'])
-monthly_df['month_index'] = np.arange(1, len(monthly_df) + 1)
-
-# Yearly Qt aligned to the first month of each season
-yearly_df = yearly_df.sort_values('season')
-yearly_df['month_index'] = monthly_df.groupby('season')['month_index'].min().values
-
-fig_combined = go.Figure()
-
-# Yearly Qt
-fig_combined.add_trace(go.Scatter(
-    x=yearly_df['month_index'],
-    y=yearly_df['Qt_tonnes'],
-    mode='lines+markers',
-    name='Yearly Qt (tonnes/m)',
-    line=dict(color='blue', width=3)
-))
-
-# Monthly Qt
-fig_combined.add_trace(go.Scatter(
-    x=monthly_df['month_index'],
-    y=monthly_df['Qt_tonnes'],
-    mode='markers+lines',
-    name='Monthly Qt (tonnes/m)',
-    marker=dict(color='orange', size=8, symbol='circle'),
-    line=dict(color='orange', width=1, dash='dot')
-))
-
-# X-axis labels: show month/year at reasonable intervals
-month_labels = monthly_df[['month_index','month','season']].drop_duplicates()
-month_labels['label'] = month_labels.apply(lambda row: f"{row['month']}/{row['season'].split('-')[0]}", axis=1)
-
-fig_combined.update_layout(
-    title="Snow Drift Transport (Qt) per Season and Month",
-    xaxis_title="Month / Season Start",
-    yaxis_title="Qt (tonnes/m)",
-    xaxis=dict(
-        tickmode='array',
-        tickvals=month_labels['month_index'],
-        ticktext=month_labels['label']
-    ),
-    legend=dict(x=0.01, y=0.99),
-    template="plotly_white"
+st.subheader("Yearly Snow Drift (Qt)")
+fig_qt = px.line(
+    yearly_df,
+    x='season',
+    y='Qt_tonnes',
+    markers=True,
+    labels={"season": "Season", "Qt_tonnes": "Qt (tonnes/m)"},
+    title="Snow Drift Qt Over Seasons"
 )
-
-st.plotly_chart(fig_combined, use_container_width=True)
+st.plotly_chart(fig_qt, use_container_width=True)
 
 # ---------------------------
-# Wind rose (reverted to original)
+# Compute average wind rose
 # ---------------------------
 st.subheader("Average Wind Rose")
-st.markdown("The wind rose shows the **directional distribution of snow transport** (Qt).")
-
 sectors_list = []
 for s, group in df_all.groupby('season'):
     group = group.copy()
@@ -258,11 +186,12 @@ overall_avg = yearly_df['Qt (kg/m)'].mean()
 angles = np.linspace(0, 360, 16, endpoint=False)
 directions = ['N','NNE','NE','ENE','E','ESE','SE','SSE',
               'S','SSW','SW','WSW','W','WNW','NW','NNW']
+theta = angles
 r = avg_sectors / 1000  # tonnes/m
 
 fig_rose = go.Figure(go.Barpolar(
     r=r,
-    theta=angles,
+    theta=theta,
     width=[22.5]*16,
     marker_color=r,
     marker_line_color="black",
