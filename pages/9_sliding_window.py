@@ -152,14 +152,14 @@ with st.expander("Click to configure settings", expanded=True):
     )
 
     st.markdown("""
-### 📌 Resample frequency 
+#### 📌 Resample frequency 
 Energy and meteorological data do not always share the same timestamps.  
 Resampling aligns them to a common time step (e.g., hourly or daily) to make comparison possible.
 """)
     freq = st.selectbox("Time resolution", ["H","3H","6H","12H","D"])
 
     st.markdown("""
-### 🌡️ Meteorological & Signal Parameters 
+#### 🌡️ Meteorological & Signal Parameters 
 Choose the weather feature affecting energy. 
 """)
     
@@ -173,7 +173,7 @@ Choose the weather feature affecting energy.
     st.caption("Tests whether weather impacts energy with a delay. Positive lag → weather leads, energy responds later; Negative lag → energy leads. Helps identify the delay at which weather most strongly affects energy.")
 
     st.markdown("""
-### 🌪 Highlight extreme events 
+#### 🌪 Highlight extreme events 
 This highlights periods where the chosen weather variable is unusually high/low or within a selected date range. The tool compares correlation during these extreme periods vs the rest of the time to see if weather influence changes.
 """)
     event_mode = st.radio("Highlight method", ["None", "By threshold", "By date range"])
