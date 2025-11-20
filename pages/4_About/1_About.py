@@ -126,7 +126,7 @@ def app():
 
   # --- Tab 4 ---
   with tab4:
-      st.header("Interactive Maps, Snow Drift, Correlations, and Forecasting")
+      st.header("Machine Learning")
       st.markdown("""
       **Objectives**:
       - Extend the Streamlit app with interactive map visualizations and user selectors.
@@ -192,9 +192,9 @@ def app():
 
       ### **AI Usage**:
       *Le Chat* ([Mistral AI](https://mistral.ai/)) assisted with:
-      - Designing the interactive map interface and GeoJSON overlays.
+      - Helping with the interactive map interface and GeoJSON overlays.
       - Integrating snow drift calculations into Streamlit with dynamic plotting.
       - Converting Sliding Window Correlation to Streamlit with Plotly.
       - Implementing the SARIMAX forecasting interface and visualizations.
-      - Optimizing app UX with caching, spinners, and page reordering.
+      - Translating the project into English.
       """)
