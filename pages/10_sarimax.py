@@ -134,11 +134,17 @@ if run_button:
 
     if exog_vars:
         df_exog = df_energy.copy()
-        # Use the same price area
+        # Filter for the selected price area
         df_exog = df_exog[df_exog["price_area"]==price_area]
-        df_exog = df_exog.set_index("start_time").resample(freq).mean()[exog_vars].fillna(method="ffill")
-        exog_train = df_exog.loc[str(start_date):str(end_date)]
-        exog_forecast = df_exog.loc[str(end_date)+":"]  # forecast exog if available
+        
+        # Select only numeric columns (exogenous vars)
+        df_exog_numeric = df_exog[exog_vars].apply(pd.to_numeric, errors='coerce')
+        
+        # Resample and fill missing values
+        df_exog_resampled = df_exog_numeric.set_index(df_exog["start_time"]).resample(freq).mean().fillna(method="ffill")
+        
+        exog_train = df_exog_resampled.loc[str(start_date):str(end_date)]
+        exog_forecast = df_exog_resampled.loc[str(end_date)+":"]
 
     # Fit SARIMAX
     mod = sm.tsa.statespace.SARIMAX(train_series,
