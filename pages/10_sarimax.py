@@ -106,51 +106,30 @@ OPENMETEO_ERA5 = "https://archive-api.open-meteo.com/v1/era5"
 
 @st.cache_data
 def download_weather_data(lat: float, lon: float, start_date: str, end_date: str,
-                          hourly=("temperature_2m", "precipitation", "wind_speed_10m", "wind_gusts_10m", "wind_direction_10m")) -> pd.DataFrame:
-    # Convertir les dates en objets datetime
-    start = datetime.fromisoformat(start_date)
-    end = datetime.fromisoformat(end_date)
+                          hourly=("temperature_2m","precipitation","wind_speed_10m","wind_gusts_10m","wind_direction_10m")) -> pd.DataFrame:
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "start_date": start_date,
+        "end_date": end_date,
+        "hourly": ",".join(hourly),
+        "timezone": "UTC"
+    }
 
-    # Liste pour stocker les DataFrames intermédiaires
-    dfs = []
-
-    # Boucle par mois
-    current_start = start
-    while current_start < end:
-        current_end = min(current_start + timedelta(days=30), end)
-        params = {
-            "latitude": lat,
-            "longitude": lon,
-            "start_date": current_start.date().isoformat(),
-            "end_date": current_end.date().isoformat(),
-            "hourly": ",".join(hourly),
-            "timezone": "UTC"
-        }
-        try:
-            response = requests.get(OPENMETEO_ERA5, params=params, timeout=30)
-            response.raise_for_status()
-            hourly_data = response.json().get("hourly", {})
-            if not hourly_data:
-                st.warning(f"No weather data for {current_start.date()} to {current_end.date()}.")
-                current_start = current_end + timedelta(days=1)
-                continue
-            df = pd.DataFrame({"time": pd.to_datetime(hourly_data.get("time", []), utc=True)})
-            for v in hourly:
-                df[v] = pd.to_numeric(hourly_data.get(v, []), errors="coerce")
-            dfs.append(df)
-            time.sleep(1)  # Délai pour éviter de saturer l'API
-        except Exception as e:
-            st.error(f"Failed to fetch weather data for {current_start.date()} to {current_end.date()}: {e}")
-            current_start = current_end + timedelta(days=1)
-            continue
-        current_start = current_end + timedelta(days=1)
-
-    if not dfs:
+    try:
+        response = requests.get(OPENMETEO_ERA5, params=params, timeout=30)
+        response.raise_for_status()
+    except Exception as e:
+        st.error(f"Failed to fetch weather data: {e}")
         return pd.DataFrame()
 
-    # Combiner tous les DataFrames
-    df_combined = pd.concat(dfs).set_index("time").sort_index()
-    return df_combined
+    hourly_data = response.json().get("hourly", {})
+    df = pd.DataFrame({"time": pd.to_datetime(hourly_data.get("time", []), utc=True)})
+    for v in hourly:
+        df[v] = pd.to_numeric(hourly_data.get(v, []), errors="coerce")
+    return df.set_index("time").sort_index()
+
+
 # -------------------------------------------------------
 # Exogenous variables (weather)
 # -------------------------------------------------------
@@ -176,12 +155,13 @@ with col1:
     p = st.number_input("AR (p)", min_value=0, value=1)
     d = st.number_input("I (d)", min_value=0, value=1)
     q = st.number_input("MA (q)", min_value=0, value=1)
+    trend = st.selectbox("Trend component", ["n", "c", "t", "ct"], index=1)
 with col2:
     P = st.number_input("Seasonal AR (P)", min_value=0, value=1)
     D = st.number_input("Seasonal I (D)", min_value=0, value=1)
     Q = st.number_input("Seasonal MA (Q)", min_value=0, value=1)
     s = st.number_input("Seasonal length (s)", min_value=1, value=24)
-trend = st.selectbox("Trend component", ["n", "c", "t", "ct"], index=1)
+
 run_button = st.button("▶️ Run Forecast")
 
 # -------------------------------------------------------
