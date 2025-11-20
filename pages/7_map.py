@@ -1,4 +1,4 @@
-# streamlit_app/pages/2_map.py
+# streamlit_app/pages/7_map.py
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
@@ -11,7 +11,7 @@ from pymongo import MongoClient
 # Page config
 # -----------------------
 st.set_page_config(page_title="Price Areas", layout="wide")
-st.title("Choropleth + Single Click Pin (NO1–NO5)")
+st.title("🗺️ Price Areas & Energy Analysis")
 
 # -----------------------
 # Load GeoJSON (cached)
