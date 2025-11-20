@@ -169,77 +169,92 @@ run_button = st.button("▶️ Run Forecast")
 # -------------------------------------------------------
 if run_button:
     st.header("📈 Forecast results")
-    train_series = series_energy.loc[str(start_date):str(end_date)]
-    if train_series.empty:
-        st.error("No training data available for the selected date range.")
-        st.stop()
 
-    exog_train = None
-    exog_forecast = None
-    if exog_vars:
-        lat_lon_map = {
-            "NO1": (59.91, 10.75),
-            "NO2": (58.15, 8.00),
-            "NO3": (63.43, 10.39),
-            "NO4": (69.65, 18.95),
-            "NO5": (60.39, 5.33)
-        }
-        lat, lon = lat_lon_map[price_area]
-        df_weather = download_weather_data(
-            lat=lat,
-            lon=lon,
-            start_date=series_energy.index.min().date().isoformat(),
-            end_date=series_energy.index.max().date().isoformat(),
-            hourly=exog_vars
-        )
-        if df_weather.empty:
-            st.error("No weather data available.")
+    # Placeholder to display status messages to the user
+    status_placeholder = st.empty()
+
+    # Show a spinner while the SARIMAX model is training
+    with st.spinner("SARIMAX is training... ⏳"):
+        # --- Prepare training data ---
+        status_placeholder.info("📊 Preparing training data...")
+        train_series = series_energy.loc[str(start_date):str(end_date)]
+        if train_series.empty:
+            st.error("No training data available for the selected date range.")
             st.stop()
-        df_exog = series_energy.to_frame().join(df_weather, how="left")
-        df_exog.fillna(method="ffill", inplace=True)
-        exog_train = df_exog.loc[str(start_date):str(end_date), exog_vars]
-        exog_forecast = df_exog.loc[str(end_date)+":", exog_vars].iloc[:forecast_horizon]
 
-    # Fit SARIMAX
-    try:
-        mod = sm.tsa.statespace.SARIMAX(
-            train_series,
-            exog=exog_train,
-            order=(p, d, q),
-            seasonal_order=(P, D, Q, s),
-            trend=trend
-        )
-        res = mod.fit(disp=False)
+        # --- Prepare exogenous variables if selected ---
+        exog_train = None
+        exog_forecast = None
+        if exog_vars:
+            status_placeholder.info("☁️ Downloading weather data...")
+            lat_lon_map = {
+                "NO1": (59.91, 10.75),
+                "NO2": (58.15, 8.00),
+                "NO3": (63.43, 10.39),
+                "NO4": (69.65, 18.95),
+                "NO5": (60.39, 5.33)
+            }
+            lat, lon = lat_lon_map[price_area]
+            df_weather = download_weather_data(
+                lat=lat,
+                lon=lon,
+                start_date=series_energy.index.min().date().isoformat(),
+                end_date=series_energy.index.max().date().isoformat(),
+                hourly=exog_vars
+            )
+            if df_weather.empty:
+                st.error("No weather data available.")
+                st.stop()
+            
+            # Join energy series with weather data and fill missing values
+            df_exog = series_energy.to_frame().join(df_weather, how="left")
+            df_exog.fillna(method="ffill", inplace=True)
+            exog_train = df_exog.loc[str(start_date):str(end_date), exog_vars]
+            exog_forecast = df_exog.loc[str(end_date)+":", exog_vars].iloc[:forecast_horizon]
+
+        # --- Fit SARIMAX model ---
+        status_placeholder.info("⚙️ Training SARIMAX model...")
+        try:
+            mod = sm.tsa.statespace.SARIMAX(
+                train_series,
+                exog=exog_train,
+                order=(p, d, q),
+                seasonal_order=(P, D, Q, s),
+                trend=trend
+            )
+            res = mod.fit(disp=False)
+        except Exception as e:
+            st.error(f"Failed to fit SARIMAX model: {e}")
+            st.stop()
+
+        # --- Generate forecast ---
+        status_placeholder.info("📈 Generating forecast...")
+        try:
+            forecast_index = pd.date_range(
+                start=train_series.index[-1] + pd.Timedelta(freq),
+                periods=forecast_horizon,
+                freq=freq
+            )
+            forecast_res = res.get_forecast(steps=forecast_horizon, exog=exog_forecast)
+            forecast_mean = forecast_res.predicted_mean
+            forecast_ci = forecast_res.conf_int()
+        except Exception as e:
+            st.error(f"Failed to generate forecast: {e}")
+            st.stop()
+
+        # --- Display results ---
+        status_placeholder.success("🎉 Forecast complete!")
+        df_plot = pd.DataFrame({
+            "Observed": series_energy,
+            "Forecast": forecast_mean
+        })
+        fig = px.line(df_plot, labels={"index": "Time"})
+        fig.add_traces([
+            px.scatter(x=forecast_ci.index, y=forecast_ci.iloc[:, 0], opacity=0.2).data[0],
+            px.scatter(x=forecast_ci.index, y=forecast_ci.iloc[:, 1], opacity=0.2).data[0]
+        ])
+        st.plotly_chart(fig, use_container_width=True)
         st.write(res.summary())
-    except Exception as e:
-        st.error(f"Failed to fit SARIMAX model: {e}")
-        st.stop()
 
-    # Forecast
-    try:
-        forecast_index = pd.date_range(
-            start=train_series.index[-1] + pd.Timedelta(freq),
-            periods=forecast_horizon,
-            freq=freq
-        )
-        forecast_res = res.get_forecast(steps=forecast_horizon, exog=exog_forecast)
-        forecast_mean = forecast_res.predicted_mean
-        forecast_ci = forecast_res.conf_int()
-    except Exception as e:
-        st.error(f"Failed to generate forecast: {e}")
-        st.stop()
-
-    # Plot results
-    df_plot = pd.DataFrame({
-        "Observed": series_energy,
-        "Forecast": forecast_mean
-    })
-    fig = px.line(df_plot, labels={"index": "Time"})
-    fig.add_traces([
-        px.scatter(x=forecast_ci.index, y=forecast_ci.iloc[:, 0], opacity=0.2).data[0],
-        px.scatter(x=forecast_ci.index, y=forecast_ci.iloc[:, 1], opacity=0.2).data[0]
-    ])
-    st.plotly_chart(fig, use_container_width=True)
-    st.success("🎉 Forecast complete!")
 else:
     st.info("Set your options above and press **Run Forecast**.")
