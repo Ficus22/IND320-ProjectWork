@@ -78,8 +78,14 @@ def download_weather_data(lat: float, lon: float, start_date: str, end_date: str
         "hourly": ",".join(hourly),
         "timezone": "UTC"
     }
-    response = requests.get(OPENMETEO_ERA5, params=params, timeout=30)
-    response.raise_for_status()
+
+    try:
+        response = requests.get(OPENMETEO_ERA5, params=params, timeout=30)
+        response.raise_for_status()
+    except Exception as e:
+        st.error(f"Failed to fetch weather data: {e}")
+        return pd.DataFrame()
+
     hourly_data = response.json().get("hourly", {})
     df = pd.DataFrame({"time": pd.to_datetime(hourly_data.get("time", []), utc=True)})
     for v in hourly:
@@ -90,11 +96,11 @@ def download_weather_data(lat: float, lon: float, start_date: str, end_date: str
 # Price area → coordinates (keep internally)
 # -------------------------------------------------------
 PRICE_AREA_COORDS = {
-    "NO1": (59.91, 10.75),
-    "NO2": (63.43, 10.39),
-    "NO3": (58.97, 5.73),
-    "NO4": (70.67, 23.68),
-    "NO5": (60.39, 5.32)
+    "NO1": (59.9139, 10.7522),   # Oslo
+    "NO2": (58.1467, 7.9956),    # Kristiansand
+    "NO3": (63.4305, 10.3951),   # Trondheim
+    "NO4": (69.6496, 18.9560),   # Tromsø
+    "NO5": (60.39299, 5.32415),  # Bergen
 }
 
 # -------------------------------------------------------
