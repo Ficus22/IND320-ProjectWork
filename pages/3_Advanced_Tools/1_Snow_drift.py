@@ -14,15 +14,15 @@ def app():
     st.set_page_config(page_title="Snow Drift Analysis", layout="wide")
     st.title("❄️ Snow Drift Analysis and Wind Rose")
     st.markdown("""
-    This page calculates **snow drift transport (Qt)** based on ERA5 weather data.
-    Qt represents the **snow mass transported by wind per meter**. We show **yearly and monthly trends**, and a **wind rose** for directional distribution.
+    This page calculates snow drift transport (Qt)** based on ERA5 weather data.
+    Qt represents the snow mass transported by wind per meter. We show yearly and monthly trends, and a wind rose for directional distribution.
     """)
 
     # ---------------------------
     # Map selection check
     # ---------------------------
     if "selected_feature_id" not in st.session_state or st.session_state.selected_feature_id is None:
-        st.warning("Please select a location on the map first!")
+        st.warning("Please select a location on the map first! (Energy Analysis > Map)")
         st.stop()
 
     lat, lon = st.session_state.last_pin
