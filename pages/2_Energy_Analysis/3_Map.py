@@ -68,9 +68,11 @@ def app():
     # -----------------------
     # Settings (on page, not sidebar)
     # -----------------------
-    st.subheader("Settings")
-    mode = st.radio("Select data type", ["Production", "Consumption"])
-    days = st.slider("Time interval (days)", 1, 30, 7)
+    set_col, info_col = st.columns([2.4, 1])
+    with set_col:
+        st.subheader("Settings")
+        mode = st.radio("Select data type", ["Production", "Consumption"])
+        days = st.slider("Time interval (days)", 1, 30, 7)
 
     # -----------------------
     # Load selected dataset
@@ -113,46 +115,45 @@ def app():
     # -----------------------
     # Layout: map + info
     # -----------------------
-    map_col, info_col = st.columns([2.4, 1])
-    with map_col:
-        m = folium.Map(location=st.session_state.last_pin, zoom_start=5, tiles="OpenStreetMap")
-        df_vals = pd.DataFrame({"id": list(value_map.keys()),
-                                "value": [v if v is not None else 0 for v in value_map.values()]})
-        choropleth = folium.Choropleth(
-            geo_data=geojson_data,
-            data=df_vals,
-            columns=["id", "value"],
-            key_on="feature.id",
-            fill_color="YlOrRd",
-            fill_opacity=0.5,
-            line_opacity=0.6,
-            line_color="white",
-            legend_name=f"Mean {mode} kWh (last {days} days)",
-            highlight=True
-        )
-        choropleth.add_to(m)
-        # Highlight selected polygon
-        if st.session_state.selected_feature_id is not None:
-            sel_id = st.session_state.selected_feature_id
-            sel_feats = [f for f in geojson_data["features"] if f.get("id") == sel_id]
-            if sel_feats:
-                folium.GeoJson(
-                    {"type": "FeatureCollection", "features": sel_feats},
-                    style_function=lambda f: {"fillOpacity": 0, "color": "red", "weight": 3}
-                ).add_to(m)
-        # Pin marker
-        folium.Marker(
-            location=st.session_state.last_pin,
-            icon=folium.Icon(color="red")
-        ).add_to(m)
-        # Capture click
-        out = st_folium(m, key="map", height=650)
-        if out and out.get("last_clicked"):
-            lat = out["last_clicked"]["lat"]
-            lon = out["last_clicked"]["lng"]
-            st.session_state.last_pin = [lat, lon]
-            st.session_state.selected_feature_id = find_feature_id(lon, lat)
-            st.rerun()
+
+    m = folium.Map(location=st.session_state.last_pin, zoom_start=5, tiles="OpenStreetMap")
+    df_vals = pd.DataFrame({"id": list(value_map.keys()),
+                            "value": [v if v is not None else 0 for v in value_map.values()]})
+    choropleth = folium.Choropleth(
+        geo_data=geojson_data,
+        data=df_vals,
+        columns=["id", "value"],
+        key_on="feature.id",
+        fill_color="YlOrRd",
+        fill_opacity=0.5,
+        line_opacity=0.6,
+        line_color="white",
+        legend_name=f"Mean {mode} kWh (last {days} days)",
+        highlight=True
+    )
+    choropleth.add_to(m)
+    # Highlight selected polygon
+    if st.session_state.selected_feature_id is not None:
+        sel_id = st.session_state.selected_feature_id
+        sel_feats = [f for f in geojson_data["features"] if f.get("id") == sel_id]
+        if sel_feats:
+            folium.GeoJson(
+                {"type": "FeatureCollection", "features": sel_feats},
+                style_function=lambda f: {"fillOpacity": 0, "color": "red", "weight": 3}
+            ).add_to(m)
+    # Pin marker
+    folium.Marker(
+        location=st.session_state.last_pin,
+        icon=folium.Icon(color="red")
+    ).add_to(m)
+    # Capture click
+    out = st_folium(m, key="map", height=650)
+    if out and out.get("last_clicked"):
+        lat = out["last_clicked"]["lat"]
+        lon = out["last_clicked"]["lng"]
+        st.session_state.last_pin = [lat, lon]
+        st.session_state.selected_feature_id = find_feature_id(lon, lat)
+        st.rerun()
 
     with info_col:
         st.subheader("Selection")
