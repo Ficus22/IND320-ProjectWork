@@ -208,7 +208,6 @@ def freq_to_timedelta(freq_str):
 if run_button:
     st.header("📈 Forecast results")
     status_placeholder = st.empty()  # messages to user
-
     with st.spinner("SARIMAX is training... ⏳"):
         # --- Training data ---
         status_placeholder.info("📊 Preparing training data...")
@@ -216,12 +215,10 @@ if run_button:
         if train_series.empty:
             st.error("No training data available for the selected date range.")
             st.stop()
-
         # --- Exogenous variables ---
         exog_train = None
         exog_forecast = None
         if exog_vars:
-
             lat_lon_map = {
                 "NO1": (59.91, 10.75),
                 "NO2": (58.15, 8.00),
@@ -240,15 +237,15 @@ if run_button:
             if df_weather.empty:
                 st.error("No weather data available.")
                 st.stop()
-            
+
             df_exog = series_energy.to_frame().join(df_weather, how="left")
             df_exog.fillna(method="ffill", inplace=True)
-            
-            # Training exogenous variables
-            exog_train = df_exog.loc[str(start_date):str(end_date), exog_vars]
+
             # --- Préparation de forecast_start ---
             forecast_start = pd.to_datetime(end_date) + freq_to_timedelta(freq)
             forecast_start = pd.Timestamp(forecast_start, tz='UTC')  # Force la timezone UTC
+
+            # --- Debug (optionnel) ---
             print("--- Debug Timezone ---")
             print("df_exog.index est timezone-aware ?", df_exog.index.tz is not None)
             print("Timezone de df_exog.index :", df_exog.index.tz)
@@ -258,10 +255,6 @@ if run_button:
             print("Exemple de valeur dans df_exog.index :", df_exog.index[0])
             print("Timezone de df_exog.index[0] :", df_exog.index[0].tz)
             print("--- Fin Debug ---")
-
-
-            # --- Conversion de l'index de df_exog en DatetimeIndex avec timezone UTC ---
-            df_exog.index = pd.to_datetime(df_exog.index).tz_localize('UTC')
 
             # --- Vérification de la cohérence des données ---
             if df_exog.empty:
@@ -273,14 +266,16 @@ if run_button:
                     st.warning(f"forecast_start ({forecast_start}) is outside the range of exogenous data index ({df_exog.index.min()} to {df_exog.index.max()}).")
                     exog_forecast = None
                 else:
+                    # Filtrer les données exogènes pour la période de prévision
                     exog_forecast = df_exog.loc[df_exog.index >= forecast_start, exog_vars].iloc[:forecast_horizon]
                     if exog_forecast.empty:
                         st.warning("No exogenous data available for the forecast period. Forecast will run without exogenous variables.")
                         exog_forecast = None
 
+            # --- Training exogenous variables ---
+            exog_train = df_exog.loc[str(start_date):str(end_date), exog_vars]
 
             status_placeholder.info("☁️ Weather data downloaded...")
-
 
         # --- Fit SARIMAX ---
         status_placeholder.info("⚙️ Training SARIMAX model...")
