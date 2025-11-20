@@ -19,15 +19,25 @@ st.set_page_config(
 st.title("🌦⚡ Meteorology ↔ Energy — Sliding Window Correlation Explorer")
 
 st.write("""
-This page lets you visualize how meteorological conditions influence **energy production or consumption** across time.
-
+This tool explores how **meteorology influences energy production or consumption over time.**
 You can:
-- Select **meteorological variables and energy consumption/production**
-- Study **time-varying correlations using a sliding window**
+- Select **meteorological variables and energy signals**
+- Study **time-varying correlations** using a sliding window
 - Test **delayed effects** using a lag
-- Highlight **extreme weather events**
+- Highlight **extreme weather periods**
 - Compare correlations **during extreme vs normal conditions**
 """)
+
+# -------------------------------------------------------
+# Price area → city names
+# -------------------------------------------------------
+PRICE_AREAS = {
+    "NO1": "Oslo",
+    "NO2": "Kristiansand",
+    "NO3": "Trondheim",
+    "NO4": "Tromsø",
+    "NO5": "Bergen"
+}
 
 # -------------------------------------------------------
 # Helper: Mongo loader
@@ -53,16 +63,16 @@ def load_mongo(collection: str) -> pd.DataFrame:
         return pd.DataFrame(columns=["price_area", "start_time", "quantity_kwh"])
 
 # -------------------------------------------------------
-# Helper: Open-Meteo weather
+# Weather loader (Open-Meteo ERA5)
 # -------------------------------------------------------
 OPENMETEO_ERA5 = "https://archive-api.open-meteo.com/v1/era5"
 
 @st.cache_data
-def download_weather_data(latitude: float, longitude: float, start_date: str, end_date: str,
+def download_weather_data(lat: float, lon: float, start_date: str, end_date: str,
                           hourly=("temperature_2m","precipitation","wind_speed_10m","wind_gusts_10m","wind_direction_10m")) -> pd.DataFrame:
     params = {
-        "latitude": latitude,
-        "longitude": longitude,
+        "latitude": lat,
+        "longitude": lon,
         "start_date": start_date,
         "end_date": end_date,
         "hourly": ",".join(hourly),
@@ -77,30 +87,26 @@ def download_weather_data(latitude: float, longitude: float, start_date: str, en
     return df.set_index("time").sort_index()
 
 # -------------------------------------------------------
-# Mapping price_area -> coordinates
+# Price area → coordinates (keep internally)
 # -------------------------------------------------------
 PRICE_AREA_COORDS = {
     "NO1": (59.91, 10.75),
     "NO2": (63.43, 10.39),
     "NO3": (58.97, 5.73),
-    "NO4": (61.47, 6.15),
-    "NO5": (70.67, 23.68),
+    "NO4": (70.67, 23.68),
+    "NO5": (60.39, 5.32)
 }
 
 # -------------------------------------------------------
-# Energy preparation
+# Energy data preparation
 # -------------------------------------------------------
 @st.cache_data
 def prepare_energy_series(df_energy: pd.DataFrame, price_area: str, resample_freq: str="H") -> pd.Series:
-    if price_area and price_area in df_energy["price_area"].unique():
-        df = df_energy[df_energy["price_area"] == price_area].copy()
-    else:
-        df = df_energy.copy()
+    df = df_energy[df_energy["price_area"] == price_area].copy()
     if df.empty:
         return pd.Series(dtype=float)
-    df["start_time"] = pd.to_datetime(df["start_time"], utc=True)
-    df = df.set_index("start_time")
-    s = df["quantity_kwh"].resample(resample_freq).sum().sort_index()
+    df = df.set_index("start_time").sort_index()
+    s = df["quantity_kwh"].resample(resample_freq).sum()
     s.name = "quantity_kwh"
     return s
 
@@ -119,38 +125,47 @@ def compute_rolled_corr(series_met: pd.Series, series_eng: pd.Series, window_hou
     return sliding_window_correlation(df.iloc[:,0], df.iloc[:,1], window_hours)
 
 # -------------------------------------------------------
-# USER SETTINGS BLOCK
+# USER SETTINGS
 # -------------------------------------------------------
 st.subheader("🔧 Analysis settings")
 
 with st.expander("Click to configure settings", expanded=True):
 
-    st.markdown("### 1) Select energy data source")
-    mode = st.radio("Dataset type", ["Production", "Consumption"])
-    collection_name = "production_data" if mode == "Production" else "consumption_data"
+    mode = st.radio("Energy dataset", ["Production", "Consumption"])
 
+    collection_name = "production_data" if mode == "Production" else "consumption_data"
     if f"df_{collection_name}" not in st.session_state:
         st.session_state[f"df_{collection_name}"] = load_mongo(collection_name)
     df_energy = st.session_state[f"df_{collection_name}"]
 
-    price_area = st.selectbox("Price area", options=[None] + sorted(df_energy["price_area"].dropna().unique()))
+    price_area = st.selectbox(
+        "Price area (region + city)",
+        options=list(PRICE_AREAS.keys()),
+        format_func=lambda x: f"{x} — {PRICE_AREAS[x]}"
+    )
 
-    st.markdown("### 2) Choose a geographical location")
-    lat, lon = PRICE_AREA_COORDS.get(price_area, (59.91, 10.75))
-    col_lat, col_lon = st.columns(2)
-    lat = col_lat.number_input("Latitude", value=float(lat))
-    lon = col_lon.number_input("Longitude", value=float(lon))
+    st.markdown("""
+**📌 Resample frequency**  
+Energy and meteorological data do not always share the same timestamps.  
+Resampling aligns them to a common time step (e.g., hourly or daily) to make comparison possible.
+""")
+    freq = st.selectbox("Time resolution", ["H","3H","6H","12H","D"])
 
-    st.markdown("### 3) Time resolution & date range")
-    years = st.slider("Weather year range", 2015, pd.Timestamp.utcnow().year, (2021, 2021))
-    freq = st.selectbox("Resample frequency", ["H","3H","6H","12H","D"])
-
-    st.markdown("### 4) Meteorological and signal settings")
+    st.markdown("""
+**🌡⚡ Meteorological & Signal Parameters**  
+- **Variable**: Chooses the weather feature affecting energy  
+- **Sliding window**: Groups consecutive time points to compute one correlation (smooth vs reactive)  
+- **Lag**: Tests whether weather impacts energy with delay (e.g. heating reaction to cold)
+""")
     met_col = st.selectbox("Meteorological variable", ["temperature_2m","precipitation","wind_speed_10m","wind_gusts_10m","wind_direction_10m"])
-    window_len = st.slider("Sliding window size (in periods)", 3, 24*30, 24)
+    window_len = st.slider("Sliding window (in periods)", 3, 24*30, 24)
     lag = st.slider("Lag (periods) — positive = weather leads", -168, 168, 0)
 
-    st.markdown("### 5) Highlight extreme events")
+    st.markdown("""
+**🌪 Highlight extreme events**  
+This highlights periods where the chosen weather variable is unusually high/low or within a selected date range.  
+The tool compares correlation *during these extreme periods vs the rest of the time* to see if weather influence changes.
+""")
     event_mode = st.radio("Highlight method", ["None", "By threshold", "By date range"])
     thr_val = None
     if event_mode == "By threshold":
@@ -161,28 +176,29 @@ with st.expander("Click to configure settings", expanded=True):
 
     run_button = st.button("▶️ Run Analysis")
 
-# ===================== RUN COMPUTATION ========================
+# -------------------------------------------------------
+# RUN COMPUTATION
+# -------------------------------------------------------
 if run_button:
     st.header("📈 Results")
 
     # --- Retrieve and align the data ---
     series_energy = prepare_energy_series(df_energy, price_area, freq)
-    start_date = f"{years[0]}-01-01"
-    end_date = f"{years[1]}-12-31"
-    df_weather = download_weather_data(float(lat), float(lon), start_date, end_date)
+    lat, lon = PRICE_AREA_COORDS[price_area]
+
+    start_date, end_date = "2015-01-01", f"{pd.Timestamp.utcnow().year}-12-31"
+    df_weather = download_weather_data(lat, lon, start_date, end_date)
     series_met = df_weather[met_col].resample(freq).mean()
 
     corr_series = compute_rolled_corr(series_met, series_energy, window_len, lag)
 
     # ===================== PLOTS =========================
 
-    # 1) Time series
-    st.subheader("📌 1) Aligned time-series")
-    fig = px.line(pd.concat([series_met.rename(met_col), series_energy.rename("quantity_kwh")], axis=1).dropna())
+    st.subheader("📌 Aligned time-series")
+    fig = px.line(pd.concat([series_met.rename(met_col), series_energy], axis=1).dropna())
     st.plotly_chart(fig, use_container_width=True)
 
-    # 2) Correlation over time
-    st.subheader("🔄 2) Sliding-window correlation")
+    st.subheader("🔄 Sliding-window correlation")
     fig_corr = px.line(x=corr_series.index, y=corr_series.values,
                        labels={"x":"Time", "y":"Correlation"},
                        title="Correlation over time")
@@ -191,7 +207,7 @@ if run_button:
 
     # 3) Extreme event comparison
     if event_mode != "None" and not corr_series.empty:
-        st.subheader("🌪 3) Correlation during extreme events vs normal conditions")
+        st.subheader("🌪 Effect of extreme weather on correlation")
 
         if event_mode == "By threshold":
             mask = (df_weather[met_col] > thr_val) if thr_dir=="Above" else (df_weather[met_col] < thr_val)
@@ -210,17 +226,18 @@ if run_button:
             st.write(f"**Mean correlation (extreme): {r_event.mean():.3f}**")
             st.write(f"**Mean correlation (normal): {r_normal.mean():.3f}**")
             st.write(f"**p-value = {p:.4f}** *(p<0.05 → significantly different)*")
-            fig_compare = px.box(pd.DataFrame({"Extreme":r_event, "Normal":r_normal}), title="Distribution of correlations")
+            fig_compare = px.box(pd.DataFrame({"Extreme":r_event, "Normal":r_normal}), title="Correlation distribution")
             st.plotly_chart(fig_compare, use_container_width=True)
         else:
-            st.info("Not enough data points inside/outside the event period to compare statistically.")
+            st.info("Not enough event data to compare statistically.")
 
     # 4) Lag scan
-    st.subheader("⏳ 4) Lag effect scan")
+    st.subheader("⏳ Lag effect scan")
     lag_range = st.slider("Lag scan range (hours)", 1, 168, 48)
     lags = range(-lag_range, lag_range+1)
     mean_corrs = [compute_rolled_corr(series_met, series_energy, window_len, L).mean() for L in lags]
-    fig_lag = px.line(x=list(lags), y=mean_corrs, labels={"x":"Lag (periods)", "y":"Mean correlation"})
+    fig_lag = px.line(x=list(lags), y=mean_corrs,
+                      labels={"x":"Lag (periods)", "y":"Mean correlation"})
     st.plotly_chart(fig_lag, use_container_width=True)
 
     st.success("🎉 Analysis completed!")
