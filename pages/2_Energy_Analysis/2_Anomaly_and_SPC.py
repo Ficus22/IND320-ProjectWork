@@ -62,21 +62,19 @@ def app():
         n_std: float = 3
     ):
         """
-        Plot temperature with SPC bounds and highlight outliers.
+        Plot raw temperature data with SPC bounds (calculated from SATV) and highlight outliers.
         Returns:
             fig: Plotly Figure
             outlier_summary: dict with count, times, and values
         """
-        # High-pass filter (SATV)
+        # High-pass filter (SATV) for SPC bounds calculation
         satv = high_pass_filter(temperature_series.values, cutoff_frequency=cutoff_frequency)
-
-        # SPC boundaries from SATV
+        # Calculate SPC boundaries from SATV
         lower, upper = calculate_spc_boundaries(satv, n_std=n_std)
-
-        # Identify outliers on raw temperature
+        # Identify outliers on raw temperature data
         outliers_mask = (temperature_series < lower) | (temperature_series > upper)
 
-        # Plot raw temperature and SPC bounds
+        # Plot raw temperature data and SPC bounds
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=temperature_series.index,
@@ -87,14 +85,14 @@ def app():
         ))
         fig.add_trace(go.Scatter(
             x=temperature_series.index,
-            y=[upper]*len(temperature_series),
+            y=[upper] * len(temperature_series),
             mode='lines',
             name='Upper Bound (SPC)',
             line=dict(color='green', dash='dash')
         ))
         fig.add_trace(go.Scatter(
             x=temperature_series.index,
-            y=[lower]*len(temperature_series),
+            y=[lower] * len(temperature_series),
             mode='lines',
             name='Lower Bound (SPC)',
             line=dict(color='red', dash='dash')
@@ -118,8 +116,8 @@ def app():
             "times": temperature_series.index[outliers_mask].tolist(),
             "values": temperature_series.values[outliers_mask].tolist()
         }
-
         return fig, outlier_summary
+
 
     def plot_precipitation_with_lof(precipitation, time, contamination=0.01):
         precip_array = np.asarray(precipitation)
