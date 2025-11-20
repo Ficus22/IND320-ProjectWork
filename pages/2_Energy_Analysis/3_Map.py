@@ -155,7 +155,7 @@ def app():
     ).add_to(m)
 
     # Display map full-width, taller height
-    out = st_folium(m, key="map", height=850, width=1200)
+    out = st_folium(m, key="map", height=1200, width=1200)
 
     # Capture click
     if out and out.get("last_clicked"):
