@@ -24,12 +24,11 @@ st.write(f"Selected location: ID={fid}, Lat={lat:.3f}, Lon={lon:.3f}")
 # ---------------------------
 # Year range selector
 # ---------------------------
-current_year = datetime.utcnow().year
 start_year, end_year = st.slider(
     "Select year range",
-    min_value=1979,
-    max_value=current_year,
-    value=(2018, 2022)
+    min_value=2021,
+    max_value=2024,
+    value=(2021, 2024)
 )
 
 # ---------------------------
@@ -124,13 +123,14 @@ if not dfs:
 
 df_all = pd.concat(dfs, ignore_index=True)
 
-# Remove the time zone
-df_all['time'] = df_all['time'].astype(str).str[:-6]
+print(df_all.dtypes)
+print(df_all.head())
 
 # Convert to datetime
 df_all['time'] = pd.to_datetime(df_all['time'], errors='coerce', utc=True)
 
-
+print(df_all.dtypes)
+print(df_all.head())
 
 
 # ---------------------------
