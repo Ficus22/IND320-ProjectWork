@@ -202,6 +202,21 @@ def freq_to_timedelta(freq_str):
         return pd.Timedelta(days=int(freq_str[:-1]))
     else:
         return pd.Timedelta(hours=1)  # fallback
+    
+def freq_to_dateoffset(freq_str):
+    if freq_str == "H":
+        return pd.DateOffset(hours=1)
+    elif freq_str == "D":
+        return pd.DateOffset(days=1)
+    elif freq_str.endswith("H"):
+        hours = int(freq_str[:-1])
+        return pd.DateOffset(hours=hours)
+    elif freq_str.endswith("D"):
+        days = int(freq_str[:-1])
+        return pd.DateOffset(days=days)
+    else:
+        return pd.DateOffset(hours=1)  # Valeur par défaut
+
 
 
 
@@ -245,16 +260,6 @@ if run_button:
             forecast_start = pd.to_datetime(end_date) + freq_to_timedelta(freq)
             forecast_start = pd.Timestamp(forecast_start, tz='UTC')  # Force la timezone UTC
 
-            # --- Debug (optionnel) ---
-            print("--- Debug Timezone ---")
-            print("df_exog.index est timezone-aware ?", df_exog.index.tz is not None)
-            print("Timezone de df_exog.index :", df_exog.index.tz)
-            print("Type de forecast_start :", type(forecast_start))
-            print("Timezone de forecast_start :", forecast_start.tz)
-            print("Valeur de forecast_start :", forecast_start)
-            print("Exemple de valeur dans df_exog.index :", df_exog.index[0])
-            print("Timezone de df_exog.index[0] :", df_exog.index[0].tz)
-            print("--- Fin Debug ---")
 
             # --- Vérification de la cohérence des données ---
             if df_exog.empty:
@@ -296,7 +301,7 @@ if run_button:
         status_placeholder.info("📈 Generating forecast...")
         try:
             forecast_index = pd.date_range(
-                start=train_series.index[-1] + pd.Timedelta(freq),
+                start=train_series.index[-1] + freq_to_dateoffset(freq),
                 periods=forecast_horizon,
                 freq=freq
             )
