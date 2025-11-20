@@ -161,14 +161,15 @@ Resampling aligns them to a common time step (e.g., hourly or daily) to make com
     st.markdown("""
 **🌡 Meteorological & Signal Parameters**  
 """)
-    st.caption("Choose the weather feature affecting energy. This is the meteorological factor whose influence you want to study.")
+    
     met_col = st.selectbox("Meteorological variable", ["temperature_2m","precipitation","wind_speed_10m","wind_gusts_10m","wind_direction_10m"])
+    st.caption("Choose the weather feature affecting energy. This is the meteorological factor whose influence you want to study.")
     
-    st.caption("Groups consecutive time points to compute one correlation. Larger window → smoother correlation; smaller window → more reactive to short-term changes.")
     window_len = st.slider("Sliding window (in hours)", 3, 24*30, 24)
+    st.caption("Groups consecutive time points to compute one correlation. Larger window → smoother correlation; smaller window → more reactive to short-term changes.")
     
-    st.caption("Tests whether weather impacts energy with a delay. Positive lag → weather leads, energy responds later; Negative lag → energy leads. Helps identify the delay at which weather most strongly affects energy.")
     lag = st.slider("Lag (in hours)", -168, 168, 0)
+    st.caption("Tests whether weather impacts energy with a delay. Positive lag → weather leads, energy responds later; Negative lag → energy leads. Helps identify the delay at which weather most strongly affects energy.")
 
     st.markdown("""
 **🌪 Highlight extreme events**  
