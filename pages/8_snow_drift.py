@@ -21,11 +21,21 @@ Qt represents the **snow mass transported by wind per meter**. We show **yearly 
 # ---------------------------
 # Map selection check
 # ---------------------------
-if "selected_feature_name" not in st.session_state or st.session_state.selected_feature_name is None:
+PRICE_AREAS = {
+    "NO1": "Oslo",
+    "NO2": "Kristiansand",
+    "NO3": "Trondheim",
+    "NO4": "Tromsø",
+    "NO5": "Bergen"
+}
+
+# Check if the user has selected a zone ID
+if "selected_feature_id" not in st.session_state or st.session_state.selected_feature_id not in PRICE_AREAS:
     st.warning("Please select a location on the map first!")
     st.stop()
 
-location_name = st.session_state.selected_feature_name
+zone_id = st.session_state.selected_feature_id
+location_name = PRICE_AREAS[zone_id]
 st.write(f"Selected location: **{location_name}**")
 
 # ---------------------------
