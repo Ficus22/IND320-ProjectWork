@@ -7,8 +7,6 @@ from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
 
-from Snow_drift import compute_yearly_results, compute_average_sector, compute_sector_transport
-
 st.set_page_config(page_title="Snow Drift Calculation", layout="wide")
 st.title("❄️ Snow Drift Calculation and Wind Rose")
 
@@ -60,7 +58,56 @@ def download_weather_data(latitude: float, longitude: float, year: int,
     return df
 
 # ---------------------------
-# Load weather data for each year
+# Snow drift functions (from Snow_drift.py)
+# ---------------------------
+def compute_Qupot(hourly_wind_speeds, dt=3600):
+    return sum((u ** 3.8) * dt for u in hourly_wind_speeds) / 233847
+
+def sector_index(direction):
+    return int(((direction + 11.25) % 360) // 22.5)
+
+def compute_sector_transport(hourly_wind_speeds, hourly_wind_dirs, dt=3600):
+    sectors = [0.0] * 16
+    for u, d in zip(hourly_wind_speeds, hourly_wind_dirs):
+        idx = sector_index(d)
+        sectors[idx] += ((u ** 3.8) * dt) / 233847
+    return sectors
+
+def compute_snow_transport(T, F, theta, Swe, hourly_wind_speeds, dt=3600):
+    Qupot = compute_Qupot(hourly_wind_speeds, dt)
+    Qspot = 0.5 * T * Swe
+    Srwe = theta * Swe
+    if Qupot > Qspot:
+        Qinf = 0.5 * T * Srwe
+        control = "Snowfall controlled"
+    else:
+        Qinf = Qupot
+        control = "Wind controlled"
+    Qt = Qinf * (1 - 0.14 ** (F / T))
+    return {"Qupot (kg/m)": Qupot, "Qspot (kg/m)": Qspot, "Srwe (mm)": Srwe, 
+            "Qinf (kg/m)": Qinf, "Qt (kg/m)": Qt, "Control": control}
+
+def compute_yearly_results(df, T, F, theta):
+    seasons = sorted(df['season'].unique())
+    results_list = []
+    for s in seasons:
+        season_start = pd.Timestamp(year=s, month=7, day=1)
+        season_end = pd.Timestamp(year=s+1, month=6, day=30, hour=23, minute=59, second=59)
+        df_season = df[(df['time'] >= season_start) & (df['time'] <= season_end)]
+        if df_season.empty:
+            continue
+        df_season = df_season.copy()
+        df_season['Swe_hourly'] = df_season.apply(
+            lambda row: row['precipitation'] if row['temperature_2m'] < 1 else 0, axis=1)
+        total_Swe = df_season['Swe_hourly'].sum()
+        wind_speeds = df_season["wind_speed_10m"].tolist()
+        result = compute_snow_transport(T, F, theta, total_Swe, wind_speeds)
+        result["season"] = f"{s}-{s+1}"
+        results_list.append(result)
+    return pd.DataFrame(results_list)
+
+# ---------------------------
+# Download weather data per year
 # ---------------------------
 dfs = []
 with st.spinner("Downloading weather data..."):
@@ -78,28 +125,23 @@ if not dfs:
 df_all = pd.concat(dfs, ignore_index=True)
 
 # ---------------------------
-# Snow drift calculation parameters
-# ---------------------------
-T = 3000      # Maximum transport distance in meters
-F = 30000     # Fetch distance in meters
-theta = 0.5   # Relocation coefficient
-
-# ---------------------------
 # Compute yearly snow drift
 # ---------------------------
+T = 3000
+F = 30000
+theta = 0.5
+
 yearly_df = compute_yearly_results(df_all, T, F, theta)
 if yearly_df.empty:
     st.warning("No snow drift data available for the selected year range.")
     st.stop()
 
-# Convert Qt to tonnes/m
 yearly_df["Qt_tonnes"] = yearly_df["Qt (kg/m)"] / 1000
 
 # ---------------------------
-# Plot Qt over seasons using Plotly
+# Plot Qt over seasons with Plotly
 # ---------------------------
 st.subheader("Yearly Snow Drift (Qt)")
-
 fig_qt = px.line(
     yearly_df,
     x='season',
@@ -111,11 +153,9 @@ fig_qt = px.line(
 st.plotly_chart(fig_qt, use_container_width=True)
 
 # ---------------------------
-# Compute and plot average wind rose
+# Compute average wind rose
 # ---------------------------
 st.subheader("Average Wind Rose")
-
-# Compute average sector values across all seasons
 sectors_list = []
 for s, group in df_all.groupby('season'):
     group = group.copy()
@@ -128,12 +168,11 @@ for s, group in df_all.groupby('season'):
 avg_sectors = np.mean(sectors_list, axis=0)
 overall_avg = yearly_df['Qt (kg/m)'].mean()
 
-# Prepare Plotly polar chart
 angles = np.linspace(0, 360, 16, endpoint=False)
 directions = ['N','NNE','NE','ENE','E','ESE','SE','SSE',
               'S','SSW','SW','WSW','W','WNW','NW','NNW']
 theta = angles
-r = avg_sectors / 1000  # Convert to tonnes/m
+r = avg_sectors / 1000  # tonnes/m
 
 fig_rose = go.Figure(go.Barpolar(
     r=r,
