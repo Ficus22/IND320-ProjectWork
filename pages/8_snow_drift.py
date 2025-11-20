@@ -42,9 +42,9 @@ st.write(f"Selected location: {PRICE_AREAS[fid]}")
 # ---------------------------
 start_year, end_year = st.slider(
     "Select year range",
-    min_value=2021,
+    min_value=2018,
     max_value=2024,
-    value=(2021, 2024)
+    value=(2018, 2024)
 )
 
 # ---------------------------
@@ -154,18 +154,62 @@ if yearly_df.empty:
 yearly_df["Qt_tonnes"] = yearly_df["Qt (kg/m)"] / 1000
 
 # ---------------------------
-# Plot Qt over seasons with Plotly
+# Compute monthly snow drift
 # ---------------------------
-st.subheader("Yearly Snow Drift (Qt)")
-fig_qt = px.line(
-    yearly_df,
-    x='season',
-    y='Qt_tonnes',
-    markers=True,
-    labels={"season": "Season", "Qt_tonnes": "Qt (tonnes/m)"},
-    title="Snow Drift Qt Over Seasons"
+df_all['year_month'] = df_all['time'].dt.to_period('M')
+
+monthly_results_list = []
+
+for ym, group in df_all.groupby('year_month'):
+    group = group.copy()
+    group['Swe_hourly'] = group.apply(
+        lambda row: row['precipitation'] if row['temperature_2m'] < 1 else 0, axis=1
+    )
+    total_Swe = group['Swe_hourly'].sum()
+    wind_speeds = group["wind_speed_10m"].tolist()
+    result = compute_snow_transport(T, F, theta, total_Swe, wind_speeds)
+    result['year_month'] = ym.to_timestamp()
+    monthly_results_list.append(result)
+
+monthly_df = pd.DataFrame(monthly_results_list)
+monthly_df["Qt_tonnes"] = monthly_df["Qt (kg/m)"] / 1000
+
+# ---------------------------
+# Plot both yearly and monthly Qt
+# ---------------------------
+import plotly.graph_objects as go
+
+fig = go.Figure()
+
+# Yearly Qt (July-June season, one point per season)
+fig.add_trace(go.Scatter(
+    x=yearly_df['plot_time'],
+    y=yearly_df['Qt_tonnes'],
+    mode='lines+markers',
+    name='Yearly Qt (July-June)',
+    line=dict(color='blue', width=3),
+    marker=dict(size=8)
+))
+
+# Monthly Qt (calendar months)
+fig.add_trace(go.Scatter(
+    x=monthly_df['year_month'],
+    y=monthly_df['Qt_tonnes'],
+    mode='lines+markers',
+    name='Monthly Qt',
+    line=dict(color='orange', width=2),
+    marker=dict(size=6)
+))
+
+fig.update_layout(
+    title="Snow Drift Transport (Qt): Yearly vs Monthly",
+    xaxis_title="Time",
+    yaxis_title="Qt (tonnes/m)",
+    legend=dict(x=0.01, y=0.99),
+    template="plotly_white"
 )
-st.plotly_chart(fig_qt, use_container_width=True)
+
+st.plotly_chart(fig, use_container_width=True)
 
 # ---------------------------
 # Compute average wind rose
