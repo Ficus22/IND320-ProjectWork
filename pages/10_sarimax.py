@@ -189,6 +189,19 @@ run_button = st.button("▶️ Run Forecast")
 # -------------------------------------------------------
 # Run forecast
 # -------------------------------------------------------
+
+# Convert user-selected freq string to a proper Timedelta
+def freq_to_timedelta(freq_str):
+    if freq_str.endswith("H"):
+        hours = int(freq_str[:-1])  # remove "H" and convert to int
+        return pd.Timedelta(hours=hours)
+    elif freq_str.endswith("D"):
+        days = int(freq_str[:-1])  # remove "D" and convert to int
+        return pd.Timedelta(days=days)
+    else:
+        # fallback: 1 hour
+        return pd.Timedelta(hours=1)
+
 if run_button:
     st.header("📈 Forecast results")
     status_placeholder = st.empty()  # messages to user
@@ -230,18 +243,9 @@ if run_button:
             
             # Training exogenous variables
             exog_train = df_exog.loc[str(start_date):str(end_date), exog_vars]
-            
-            # Map freq string to Timedelta
-            if freq.endswith("H"):
-                hours = int(freq.replace("H",""))
-                td = pd.Timedelta(hours=hours)
-            elif freq.endswith("D"):
-                days = int(freq.replace("D",""))
-                td = pd.Timedelta(days=days)
-            else:
-                td = pd.Timedelta(hours=1)  # fallback
 
-            forecast_start = pd.to_datetime(end_date) + td
+            forecast_start = pd.to_datetime(end_date) + freq_to_timedelta(freq)
+
 
             exog_forecast = df_exog.loc[df_exog.index >= forecast_start, exog_vars].iloc[:forecast_horizon]
             
