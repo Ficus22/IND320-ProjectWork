@@ -155,7 +155,7 @@ def app():
     ).add_to(m)
 
     # Display map full-width, taller height
-    out = st_folium(m, key="map", height=1200, width=1200)
+    out = st_folium(m, key="map", height=1200, width=650)
 
     # Capture click
     if out and out.get("last_clicked"):
@@ -165,20 +165,6 @@ def app():
         st.session_state.selected_feature_id = find_feature_id(lon, lat)
         st.rerun()
 
-    # -----------------------
-    # Info section below map
-    # -----------------------
-    st.subheader("Selection Info")
-    st.write(f"Lat: {st.session_state.last_pin[0]:.6f}")
-    st.write(f"Lon: {st.session_state.last_pin[1]:.6f}")
-    fid = st.session_state.selected_feature_id
-    if fid is None:
-        st.write("Outside known features.")
-    else:
-        area_name = id_to_name.get(fid, f"ID {fid}")
-        val = value_map.get(fid)
-        st.write(f"Area: **{area_name}**")
-        st.write(f"Mean {mode} (kWh): **{val if val is not None else 'n/a'}**")
 
 
     with info_col:
