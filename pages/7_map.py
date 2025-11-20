@@ -5,75 +5,95 @@ import pandas as pd
 import plotly.express as px
 from shapely.geometry import Point, shape
 from pymongo import MongoClient
-import streamlit.components.v1 as components
 from streamlit_plotly_events2 import plotly_events
 
-
 # ============================================================
-# Page title
+# Page setup
 # ============================================================
 st.set_page_config(page_title="Price Area Map", layout="wide")
 st.title("🗺️ Norwegian Price Areas Map (NO1–NO5)")
 
 # ============================================================
-# MongoDB connection
+# Cache Mongo + data loading (like teacher does w/ geojson)
 # ============================================================
-if "df_elhub" not in st.session_state:
+@st.cache_data
+def load_elhub_data():
     MONGO_URI = st.secrets["MONGO_URI"]
     client = MongoClient(MONGO_URI)
     db = client["elhub_data"]
-    collection = db["production_data"]
-    data = list(collection.find({}))
-    df = pd.DataFrame(data)
+    coll = db["production_data"]
+    df = pd.DataFrame(list(coll.find({})))
     df["start_time"] = pd.to_datetime(df["start_time"])
-    st.session_state.df_elhub = df
-else:
-    df = st.session_state.df_elhub
+    return df
+
+if "df_elhub" not in st.session_state:
+    st.session_state.df_elhub = load_elhub_data()
+
+df = st.session_state.df_elhub
 
 # ============================================================
-# Load GeoJSON in repo
+# Load GeoJSON (cached)
 # ============================================================
-with open("data/price_zones.geojson", "r") as f:
-    geojson = json.load(f)
+@st.cache_data
+def load_geojson():
+    with open("data/price_zones.geojson", "r") as f:
+        return json.load(f)
+
+geojson_data = load_geojson()
 
 # ============================================================
-# UI Filters
+# Build shapely polygons once (cached in session)
+# ============================================================
+if "polygons" not in st.session_state:
+    polys = []
+    for feat in geojson_data.get("features", []):
+        try:
+            geom = shape(feat["geometry"])
+            name = feat.get("properties", {}).get("name")
+            polys.append((name, geom))  # store (areaName, geometry)
+        except Exception:
+            continue
+    st.session_state.polygons = polys
+
+def find_area_name(lon: float, lat: float):
+    pt = Point(lon, lat)
+    for area_name, geom in st.session_state.polygons:
+        if geom.covers(pt):  # boundary-inclusive
+            return area_name
+    return None
+
+# ============================================================
+# Sidebar: time interval
 # ============================================================
 st.sidebar.header("⚙️ Settings")
-
 days = st.sidebar.slider("Time interval (days)", 1, 30, 7)
 
 date_max = df["start_time"].max()
 date_min = date_max - pd.Timedelta(days=days)
-
 df_period = df[(df["start_time"] >= date_min) & (df["start_time"] <= date_max)]
 
 mean_df = df_period.groupby("price_area")["quantity_kwh"].mean().reset_index()
 mean_df.columns = ["price_area", "mean_kwh"]
 
 # ============================================================
-# Click storage in session state
+# Init selected items same way teacher pre-selects last pin
 # ============================================================
-if "clicked_point" not in st.session_state:
-    st.session_state.clicked_point = None
 if "selected_area" not in st.session_state:
     st.session_state.selected_area = None
+if "clicked_point" not in st.session_state:
+    st.session_state.clicked_point = [64.5, 11.0]  # center of Norway
 
-# Function to detect area from lon/lat
-def detect_area(lon, lat):
-    pt = Point(lon, lat)
-    for feat in geojson["features"]:
-        geom = shape(feat["geometry"])
-        if geom.contains(pt):
-            return feat["properties"].get("name", None)
-    return None
+# Preselect initial area only once
+if st.session_state.selected_area is None:
+    lat, lon = st.session_state.clicked_point
+    st.session_state.selected_area = find_area_name(lon, lat)
 
 # ============================================================
-# Create Plotly Map
+# Build Plotly choropleth map
 # ============================================================
 fig = px.choropleth_mapbox(
     mean_df,
-    geojson=geojson,
+    geojson=geojson_data,
     locations="price_area",
     featureidkey="properties.name",
     color="mean_kwh",
@@ -85,55 +105,36 @@ fig = px.choropleth_mapbox(
     color_continuous_scale="Oranges"
 )
 
-# Highlight selected area if exists
+# Highlight selected area
 if st.session_state.selected_area:
     fig.update_traces(marker_line_color="red", marker_line_width=4)
 
-clicked_points = plotly_events(fig, click_event=True, hover_event=False)
-
-if clicked_points:
-    lat = clicked_points[0]["lat"]
-    lon = clicked_points[0]["lon"]
-    st.session_state.clicked_point = (lat, lon)
-    st.session_state.selected_area = detect_area(lon, lat)
-
-
 # ============================================================
-# Inject JS to capture Plotly click
+# Capture clicks using teacher-style "single rerun"
 # ============================================================
-components.html("""
-<script>
-const plot = window.parent.document.querySelector('iframe[title="Plotly Chart"]');
-function sendData(lat, lon){
-    window.parent.postMessage({type: "map_click", lat: lat, lon: lon}, "*");
-}
-if(plot){
-  plot.onload = function(){
-    const plotDoc = plot.contentWindow.document.querySelector('div.js-plotly-plot');
-    plotDoc.on('plotly_click', function(data){
-      const point = data.points[0];
-      sendData(point.lat, point.lon);
-    });
-  };
-}
-</script>
-""", height=0)
+clicked = plotly_events(fig, click_event=True, hover_event=False)
+
+if clicked:
+    lat = clicked[0]["lat"]
+    lon = clicked[0]["lon"]
+    # Update exactly like teacher does
+    st.session_state.clicked_point = [lat, lon]
+    st.session_state.selected_area = find_area_name(lon, lat)
+    st.rerun()
+
+# Display map
+st.plotly_chart(fig, use_container_width=True)
 
 # ============================================================
-# Listen to messages from JS
+# Display selection
 # ============================================================
-msg = st.experimental_get_query_params()
+st.subheader("📌 Selection")
+st.write(f"Latitude:  {st.session_state.clicked_point[0]:.6f}")
+st.write(f"Longitude: {st.session_state.clicked_point[1]:.6f}")
 
-if "lat" in msg and "lon" in msg:
-    lat = float(msg["lat"][0])
-    lon = float(msg["lon"][0])
-    st.session_state.clicked_point = (lat, lon)
-    st.session_state.selected_area = detect_area(lon, lat)
+if st.session_state.selected_area:
+    st.success(f"🏷️ Price Area: **{st.session_state.selected_area}**")
+else:
+    st.error("Outside known Price Areas ❌")
 
-# ============================================================
-# Display results
-# ============================================================
-st.write("### 📌 Clicked coordinates:", st.session_state.clicked_point)
-st.write("### 🏷️ Detected Price Area:", st.session_state.selected_area)
-st.markdown("---")
-st.markdown("💡 Tip: Zoom and click inside a zone to highlight and get its average values.")
+st.markdown("💡 Zoom and click inside a zone to highlight and display its average values.")
