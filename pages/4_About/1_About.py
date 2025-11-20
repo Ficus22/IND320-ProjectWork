@@ -12,7 +12,7 @@ def app():
   # -------------------------
   # Tabs
   # -------------------------
-  tab1, tab2, tab3 = st.tabs(["Assignement 1", "Assignement 2", "Assignement 3"])
+  tab1, tab2, tab3, tab4 = st.tabs(["Assignment 1", "Assignment 2", "Assignment 3", "Assignment 4"])
 
   # --- Tab 1 ---
   with tab1:
@@ -123,3 +123,78 @@ def app():
   - Switching from Matplotlib to Plotly.
   - Translating the project into English.
   """)
+
+  # --- Tab 4 ---
+  with tab4:
+      st.header("Interactive Maps, Snow Drift, Correlations, and Forecasting")
+      st.markdown("""
+      **Objectives**:
+      - Extend the Streamlit app with interactive map visualizations and user selectors.
+      - Allow users to select Price areas, coordinates, production/consumption groups, and time intervals.
+      - Implement snow drift calculations and visualizations per year and per month.
+      - Enable meteorology-energy production correlations with sliding windows.
+      - Add dynamic forecasting of energy production/consumption using SARIMAX.
+      - Improve UX by reordering pages, caching, and adding spinners for long computations.
+
+      **Technologies Used**:
+      - **Python** (Pandas, NumPy, Plotly, Folium, Statsmodels)
+      - **Streamlit** for interactive visualization.
+      - Geospatial data handling:
+          - **GeoJSON overlays** of Price areas (NO1–NO5)
+          - Interactive choropleth mapping and coordinate selection
+      - Statistical & forecasting methods:
+          - **Sliding Window Correlation**
+          - **SARIMAX forecasting**
+          - Snow drift calculations and wind rose plots
+
+      **Features Added**:
+
+      - **Interactive Map & Selectors**:
+          - Plotly/Folium map with GeoJSON overlays of Price areas NO1–NO5.
+          - Downloaded and integrated GeoJSON data from NVE (Elspot areas).
+          - Display outlines of all Price areas and highlight the selected area.
+          - Store and mark any clicked coordinates interactively.
+          - Allow users to choose an energy production/consumption group and time interval (days).
+          - Transparent choropleth coloring of areas based on mean values of the selected group over the chosen interval.
+
+      - **Snow Drift Calculation & Visualization**:
+          - Year defined from July 1 of the selected year to June 30 of the following year.
+          - Calculate snow drift per year for a selectable range of years.
+          - Plot results with wind rose from Snow_drift.py.
+          - Handle gracefully if no coordinate selection is made.
+          - Added monthly snow drift plots, adjusting the x-axis for semesters and months.
+
+      - **Meteorology & Energy Production**:
+          - Sliding Window Correlation integrated into Streamlit with Plotly visuals.
+          - Selectable lag and window length.
+          - Independent selectors for meteorological properties and energy production/consumption.
+          - Interactive exploration allows detection of correlation changes during normal vs. extreme weather.
+
+      - **Forecasting Energy Production & Consumption**:
+          - Dynamic SARIMAX interface with selectable parameters.
+          - User-defined training timeframe and forecast horizon.
+          - Forecasts of selected energy property with optional exogenous variables.
+          - Interactive plotting with confidence intervals.
+
+      - **UX Improvements**:
+          - Reordered pages to improve navigation and workflow for users.
+          - Added caching of heavy computations for faster interaction.
+          - Spinners during long calculations to indicate progress.
+          
+      **Challenges and Adaptations**:
+      - Ensured map interactions work smoothly with coordinate selections and Price area highlighting.
+      - Adapted Snow_drift.py code to integrate into Streamlit with dynamic year selection and monthly plotting.
+      - Maintained consistent color scales and axes across choropleth maps.
+      - Verified compatibility between meteorological and production datasets for correlation analysis.
+      - Streamlined forecasting interface for non-expert users, including validation of parameter inputs.
+
+      ---
+
+      ### **AI Usage**:
+      *Le Chat* ([Mistral AI](https://mistral.ai/)) assisted with:
+      - Designing the interactive map interface and GeoJSON overlays.
+      - Integrating snow drift calculations into Streamlit with dynamic plotting.
+      - Converting Sliding Window Correlation to Streamlit with Plotly.
+      - Implementing the SARIMAX forecasting interface and visualizations.
+      - Optimizing app UX with caching, spinners, and page reordering.
+      """)
