@@ -231,8 +231,18 @@ if run_button:
             # Training exogenous variables
             exog_train = df_exog.loc[str(start_date):str(end_date), exog_vars]
             
-            # Forecast exogenous variables – slice safely after end_date
-            forecast_start = pd.to_datetime(end_date) + pd.Timedelta(freq)
+            # Map freq string to Timedelta
+            if freq.endswith("H"):
+                hours = int(freq.replace("H",""))
+                td = pd.Timedelta(hours=hours)
+            elif freq.endswith("D"):
+                days = int(freq.replace("D",""))
+                td = pd.Timedelta(days=days)
+            else:
+                td = pd.Timedelta(hours=1)  # fallback
+
+            forecast_start = pd.to_datetime(end_date) + td
+
             exog_forecast = df_exog.loc[df_exog.index >= forecast_start, exog_vars].iloc[:forecast_horizon]
             
             # Safety check
