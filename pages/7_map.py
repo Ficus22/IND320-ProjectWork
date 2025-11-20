@@ -6,7 +6,7 @@ import plotly.express as px
 from shapely.geometry import Point, shape
 from pymongo import MongoClient
 import streamlit.components.v1 as components
-from streamlit_plotly_events import plotly_events
+from streamlit_plotly_events2 import plotly_events
 
 
 # ============================================================

@@ -10,4 +10,4 @@ scipy
 numpy
 scikit-learn
 shapely
-streamlit-plotly-events
+streamlit-plotly-events2
