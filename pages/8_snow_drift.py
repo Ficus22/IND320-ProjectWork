@@ -29,14 +29,13 @@ PRICE_AREAS = {
     "7": "Bergen"
 }
 
-# Check if the user has selected a zone ID
-if "selected_feature_id" not in st.session_state or st.session_state.selected_feature_id not in PRICE_AREAS:
+if "selected_feature_id" not in st.session_state or st.session_state.selected_feature_id is None:
     st.warning("Please select a location on the map first!")
     st.stop()
 
-zone_id = st.session_state.selected_feature_id
-location_name = PRICE_AREAS[zone_id]
-st.write(f"Selected location: **{location_name}**")
+lat, lon = st.session_state.last_pin
+fid = st.session_state.selected_feature_id
+st.write(f"Selected location: ID={fid}, Lat={lat:.3f}, Lon={lon:.3f}, city={PRICE_AREAS[fid]}")
 
 # ---------------------------
 # Year range selector
