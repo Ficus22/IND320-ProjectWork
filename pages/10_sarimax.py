@@ -133,18 +133,26 @@ if run_button:
     exog_forecast = None
 
     if exog_vars:
-        df_exog = df_energy.copy()
-        # Filter for the selected price area
-        df_exog = df_exog[df_exog["price_area"]==price_area]
+        df_exog = df_energy[df_energy["price_area"] == price_area].copy()
         
-        # Select only numeric columns (exogenous vars)
-        df_exog_numeric = df_exog[exog_vars].apply(pd.to_numeric, errors='coerce')
+        # Keep only exogenous variables that exist in df_exog
+        exog_vars_existing = [col for col in exog_vars if col in df_exog.columns]
         
-        # Resample and fill missing values
-        df_exog_resampled = df_exog_numeric.set_index(df_exog["start_time"]).resample(freq).mean().fillna(method="ffill")
-        
-        exog_train = df_exog_resampled.loc[str(start_date):str(end_date)]
-        exog_forecast = df_exog_resampled.loc[str(end_date)+":"]
+        if not exog_vars_existing:
+            st.warning("No selected exogenous variables exist in the dataset.")
+            exog_train = None
+            exog_forecast = None
+        else:
+            # Convert to numeric (coerce errors)
+            df_exog_numeric = df_exog[exog_vars_existing].apply(pd.to_numeric, errors='coerce')
+            
+            # Resample and forward-fill
+            df_exog_resampled = df_exog_numeric.set_index(df_exog["start_time"]).resample(freq).mean().fillna(method="ffill")
+            
+            # Split train/forecast
+            exog_train = df_exog_resampled.loc[str(start_date):str(end_date)]
+            exog_forecast = df_exog_resampled.loc[str(end_date)+":"]
+
 
     # Fit SARIMAX
     mod = sm.tsa.statespace.SARIMAX(train_series,
