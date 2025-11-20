@@ -246,12 +246,17 @@ if run_button:
             
             # Training exogenous variables
             exog_train = df_exog.loc[str(start_date):str(end_date), exog_vars]
-
+            # --- Exemple corrigé ---
             forecast_start = pd.to_datetime(end_date) + freq_to_timedelta(freq)
+            df_exog.index = pd.to_datetime(df_exog.index)  # Assurez-vous que l'index est un DatetimeIndex
 
+            # Vérifiez que forecast_start est bien un Timestamp
+            if not isinstance(forecast_start, pd.Timestamp):
+                forecast_start = pd.Timestamp(forecast_start)
 
+            # Filtrez les données
             exog_forecast = df_exog.loc[df_exog.index >= forecast_start, exog_vars].iloc[:forecast_horizon]
-            
+
             # Safety check
             if exog_forecast.empty:
                 st.warning("No exogenous data available for forecast. Forecast will run without exogenous variables.")
