@@ -1,5 +1,13 @@
 # streamlit_app/app.py
 import streamlit as st
+from utils.data_loader import load_mongo_data, download_weather_data
+
+# Load data once at app launch
+if "df_production" not in st.session_state:
+    st.session_state.df_production = load_mongo_data("production_data")
+if "df_consumption" not in st.session_state:
+    st.session_state.df_consumption = load_mongo_data("consumption_data")
+
 
 # =========================
 # Page configuration

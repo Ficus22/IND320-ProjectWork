@@ -1,19 +1,20 @@
-# streamlit_app/pages/5_new_B.py
+# streamlit_app/pages/5_anomaly_and_SPC.py
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from scipy.fftpack import dct, idct
 from sklearn.neighbors import LocalOutlierFactor
-from pymongo import MongoClient
+from utils.data_loader import load_mongo_data
+from utils.config import PRICE_AREAS
 
 st.set_page_config(page_title="Anomaly & SPC Analysis", layout="wide")
 
 # -------------------------
-# Check if price area selected on page 2
+# Check if price area selected
 # -------------------------
 if "selected_price_area" not in st.session_state:
-    st.warning("Please select a Price Area on page 2 (elhub) first.")
+    st.warning("Please select a Price Area on the Energy Production Dashboard first.")
     st.stop()
 
 price_area = st.session_state.selected_price_area
@@ -21,32 +22,17 @@ price_area = st.session_state.selected_price_area
 # -------------------------
 # Price area info
 # -------------------------
-PRICE_AREAS = {
-    "NO1": {"city": "Oslo", "lat": 59.9139, "lon": 10.7522},
-    "NO2": {"city": "Kristiansand", "lat": 58.1467, "lon": 7.9956},
-    "NO3": {"city": "Trondheim", "lat": 63.4305, "lon": 10.3951},
-    "NO4": {"city": "Tromsø", "lat": 69.6492, "lon": 18.9553},
-    "NO5": {"city": "Bergen", "lat": 60.3913, "lon": 5.3221},
-}
-
 if price_area not in PRICE_AREAS:
     st.error(f"Unknown price area: {price_area}")
     st.stop()
 
 city = PRICE_AREAS[price_area]["city"]
-
-st.title(f"🔍 Outliers and anomalies for {city}")
+st.title(f"🔍 Outliers and Anomalies for {city}")
 
 # -------------------------
-# Load data (MongoDB / Elhub)
+# Load data
 # -------------------------
-MONGO_URI = st.secrets["MONGO_URI"]
-client = MongoClient(MONGO_URI)
-db = client["elhub_data"]
-collection = db["production_data"]
-
-data = list(collection.find({}))
-df = pd.DataFrame(data)
+df = load_mongo_data("production_data")
 if not pd.api.types.is_datetime64_any_dtype(df["start_time"]):
     df["start_time"] = pd.to_datetime(df["start_time"], utc=True)
 
@@ -64,7 +50,6 @@ def calculate_spc_boundaries(data, n_std=3):
     data_array = np.asarray(data)
     median = np.median(data_array)
     mad = np.median(np.abs(data_array - median))
-
     sigma = 1.4826 * mad
     lower_bound = median - n_std * sigma
     upper_bound = median + n_std * sigma
@@ -82,23 +67,18 @@ def plot_temperature_spc_dct_plotly(
     show_normalized=False
 ):
     """
-    SPC with DCT filtering + optional normalized display only.
+    SPC with DCT filtering + optional normalized display.
     """
     temp_array = np.asarray(temperature_data)
-
-    # --------- DCT FILTER ----------
+    # DCT FILTER
     dct_filtered = high_pass_filter(temp_array, cutoff_frequency)
-
-    # --------- SPC BOUNDARIES ----------
+    # SPC BOUNDARIES
     lower, upper, median = calculate_spc_boundaries(dct_filtered, n_std)
-
     fig = go.Figure()
-
     if show_normalized:
         # Normalized data
         temp_norm = normalize_series(temp_array)
         dct_norm = normalize_series(dct_filtered)
-
         fig.add_trace(go.Scatter(
             x=time_data,
             y=temp_norm,
@@ -113,8 +93,6 @@ def plot_temperature_spc_dct_plotly(
             name='DCT filtered (normalized)',
             line=dict(color='orange')
         ))
-
-
         # Outliers
         outliers = (dct_norm < 0) | (dct_norm > 1)
         fig.add_trace(go.Scatter(
@@ -124,7 +102,6 @@ def plot_temperature_spc_dct_plotly(
             name='Outliers',
             marker=dict(color='red', size=7)
         ))
-
     else:
         # Real values
         fig.add_trace(go.Scatter(
@@ -141,7 +118,6 @@ def plot_temperature_spc_dct_plotly(
             name='DCT filtered (kWh)',
             line=dict(color='orange')
         ))
-
         # SPC bounds
         fig.add_trace(go.Scatter(
             x=time_data,
@@ -157,7 +133,6 @@ def plot_temperature_spc_dct_plotly(
             name='Lower Bound (SPC)',
             line=dict(color='red', dash='dash')
         ))
-
         # Outliers
         outliers = (dct_filtered < lower) | (dct_filtered > upper)
         fig.add_trace(go.Scatter(
@@ -167,16 +142,13 @@ def plot_temperature_spc_dct_plotly(
             name='Outliers',
             marker=dict(color='red', size=7)
         ))
-
     fig.update_layout(
         title=f"SPC + DCT Analysis (n_std={n_std})",
         hovermode="x unified",
         legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
         yaxis=dict(title="Normalized" if show_normalized else "kWh (real values)")
     )
-
     st.plotly_chart(fig, use_container_width=True)
-
 
 def plot_precipitation_with_lof(precipitation, time, contamination=0.01):
     precip_array = np.asarray(precipitation)
@@ -184,7 +156,6 @@ def plot_precipitation_with_lof(precipitation, time, contamination=0.01):
     data_reshaped = precip_array.reshape(-1,1)
     lof = LocalOutlierFactor(contamination=contamination)
     outlier_flags = lof.fit_predict(data_reshaped) == -1
-
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=time_array, y=precip_array, mode='lines', name='Precipitation', line=dict(color='blue')))
     fig.add_trace(go.Scatter(x=time_array[outlier_flags], y=precip_array[outlier_flags], mode='markers', name='LOF Anomalies', marker=dict(color='red', size=6)))
@@ -203,12 +174,9 @@ with tab1:
     selected_group = st.selectbox("Select Production Group", groups)
     cutoff_frequency = st.slider("DCT High-pass cutoff frequency", min_value=0.0, max_value=1.0, value=0.3)
     n_std = st.number_input("SPC sensitivity", value=3, step=1)
+    show_normalized = st.checkbox("Display normalized output", value=False)
 
-    show_normalized = st.checkbox(
-    "Display normalized output", 
-    value=False)
-
-    df_tab1 = df[(df["price_area"]==price_area) & (df["production_group"]==selected_group)]
+    df_tab1 = df[(df["price_area"] == price_area) & (df["production_group"] == selected_group)]
     if df_tab1.empty:
         st.info("No data available for this selection.")
     else:
@@ -224,14 +192,13 @@ with tab1:
             show_normalized=show_normalized
         )
 
-
 # --- Tab 2: Anomaly/LOF ---
 with tab2:
     st.header(f"Anomaly Detection with LOF for {city}")
     selected_group_lof = st.selectbox("Select Production Group", groups, key="lof_group")
-    contamination = st.slider("Expected outliers (%)", min_value=0.0, max_value=10.0, value=1.0)/100
+    contamination = st.slider("Expected outliers (%)", min_value=0.0, max_value=10.0, value=1.0) / 100
 
-    df_tab2 = df[(df["price_area"]==price_area) & (df["production_group"]==selected_group_lof)]
+    df_tab2 = df[(df["price_area"] == price_area) & (df["production_group"] == selected_group_lof)]
     if df_tab2.empty:
         st.info("No data available for this selection.")
     else:

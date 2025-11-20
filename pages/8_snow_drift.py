@@ -2,40 +2,47 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import requests
-from datetime import datetime
 import plotly.express as px
 import plotly.graph_objects as go
+from utils.data_loader import download_weather_data
+from utils.config import PRICE_AREAS
 
 # ---------------------------
 # Page configuration
 # ---------------------------
 st.set_page_config(page_title="Snow Drift Analysis", layout="wide")
 st.title("❄️ Snow Drift Analysis and Wind Rose")
-
 st.markdown("""
-This page calculates **snow drift transport (Qt)** based on ERA5 weather data.  
+This page calculates **snow drift transport (Qt)** based on ERA5 weather data.
 Qt represents the **snow mass transported by wind per meter**. We show **yearly and monthly trends**, and a **wind rose** for directional distribution.
 """)
 
 # ---------------------------
 # Map selection check
 # ---------------------------
-PRICE_AREAS = {
-    8: "Oslo",
-    6: "Kristiansand",
-    9: "Trondheim",
-    10: "Tromsø",
-    7: "Bergen"
-}
-
 if "selected_feature_id" not in st.session_state or st.session_state.selected_feature_id is None:
     st.warning("Please select a location on the map first!")
     st.stop()
 
 lat, lon = st.session_state.last_pin
 fid = st.session_state.selected_feature_id
-st.write(f"Selected location: {PRICE_AREAS[fid]}")
+
+# Use PRICE_AREAS from config.py
+price_areas = {
+    8: "NO1",
+    6: "NO2",
+    9: "NO3",
+    10: "NO4",
+    7: "NO5"
+}
+
+if fid not in price_areas:
+    st.error(f"Unknown feature ID: {fid}")
+    st.stop()
+
+price_area = price_areas[fid]
+city = PRICE_AREAS[price_area]["city"]
+st.write(f"Selected location: {city}")
 
 # ---------------------------
 # Year range selector
@@ -44,36 +51,11 @@ start_year, end_year = st.slider(
     "Select year range",
     min_value=2018,
     max_value=2024,
-    value=(2018, 2024)
+    value=(2018, 2021)
 )
 
 # ---------------------------
-# Download weather data function
-# ---------------------------
-OPENMETEO_ERA5 = "https://archive-api.open-meteo.com/v1/era5"
-
-@st.cache_data
-def download_weather_data(latitude: float, longitude: float, year: int,
-                          hourly=("temperature_2m","precipitation",
-                                  "wind_speed_10m","wind_gusts_10m","wind_direction_10m")) -> pd.DataFrame:
-    params = {
-        "latitude": latitude,
-        "longitude": longitude,
-        "start_date": f"{year}-01-01",
-        "end_date": f"{year}-12-31",
-        "hourly": ",".join(hourly),
-        "timezone": "UTC"
-    }
-    response = requests.get(OPENMETEO_ERA5, params=params, timeout=30)
-    response.raise_for_status()
-    hourly_data = response.json().get("hourly", {})
-    df = pd.DataFrame({"time": pd.to_datetime(hourly_data.get("time", []), utc=True)})
-    for v in hourly:
-        df[v] = pd.to_numeric(hourly_data.get(v, []), errors="coerce")
-    return df
-
-# ---------------------------
-# Snow drift functions (from Snow_drift.py)
+# Snow drift functions
 # ---------------------------
 def compute_Qupot(hourly_wind_speeds, dt=3600):
     return sum((u ** 3.8) * dt for u in hourly_wind_speeds) / 233847
@@ -99,7 +81,7 @@ def compute_snow_transport(T, F, theta, Swe, hourly_wind_speeds, dt=3600):
         Qinf = Qupot
         control = "Wind controlled"
     Qt = Qinf * (1 - 0.14 ** (F / T))
-    return {"Qupot (kg/m)": Qupot, "Qspot (kg/m)": Qspot, "Srwe (mm)": Srwe, 
+    return {"Qupot (kg/m)": Qupot, "Qspot (kg/m)": Qspot, "Srwe (mm)": Srwe,
             "Qinf (kg/m)": Qinf, "Qt (kg/m)": Qt, "Control": control}
 
 def compute_yearly_results(df, T, F, theta):
@@ -133,7 +115,6 @@ with st.spinner("Downloading weather data..."):
             dfs.append(df_year)
         except Exception as e:
             st.error(f"Error loading data for year {year}: {e}")
-
 if not dfs:
     st.stop()
 
@@ -145,7 +126,6 @@ df_all = pd.concat(dfs, ignore_index=True)
 T = 3000
 F = 30000
 theta = 0.5
-
 yearly_df = compute_yearly_results(df_all, T, F, theta)
 if yearly_df.empty:
     st.warning("No snow drift data available for the selected year range.")
@@ -156,14 +136,11 @@ yearly_df["Qt_tonnes"] = yearly_df["Qt (kg/m)"] / 1000
 # Assign a datetime for plotting: first month of the season (July)
 yearly_df['plot_time'] = yearly_df['season'].apply(lambda s: pd.Timestamp(int(s.split('-')[0]), 7, 1))
 
-
 # ---------------------------
 # Compute monthly snow drift
 # ---------------------------
 df_all['year_month'] = df_all['time'].dt.to_period('M')
-
 monthly_results_list = []
-
 for ym, group in df_all.groupby('year_month'):
     group = group.copy()
     group['Swe_hourly'] = group.apply(
@@ -181,9 +158,7 @@ monthly_df["Qt_tonnes"] = monthly_df["Qt (kg/m)"] / 1000
 # ---------------------------
 # Plot both yearly and monthly Qt
 # ---------------------------
-
 fig = go.Figure()
-
 # Yearly Qt (July-June season, one point per season)
 fig.add_trace(go.Scatter(
     x=yearly_df['plot_time'],
@@ -193,7 +168,6 @@ fig.add_trace(go.Scatter(
     line=dict(color='blue', width=3),
     marker=dict(size=8)
 ))
-
 # Monthly Qt (calendar months)
 fig.add_trace(go.Scatter(
     x=monthly_df['year_month'],
@@ -203,7 +177,6 @@ fig.add_trace(go.Scatter(
     line=dict(color='orange', width=2),
     marker=dict(size=6)
 ))
-
 fig.update_layout(
     title="Snow Drift Transport (Qt): Yearly vs Monthly",
     xaxis_title="Time",
@@ -211,7 +184,6 @@ fig.update_layout(
     legend=dict(x=0.01, y=0.99),
     template="plotly_white"
 )
-
 st.plotly_chart(fig, use_container_width=True)
 
 # ---------------------------
@@ -229,13 +201,11 @@ for s, group in df_all.groupby('season'):
 
 avg_sectors = np.mean(sectors_list, axis=0)
 overall_avg = yearly_df['Qt (kg/m)'].mean()
-
 angles = np.linspace(0, 360, 16, endpoint=False)
 directions = ['N','NNE','NE','ENE','E','ESE','SE','SSE',
               'S','SSW','SW','WSW','W','WNW','NW','NNW']
 theta = angles
 r = avg_sectors / 1000  # tonnes/m
-
 fig_rose = go.Figure(go.Barpolar(
     r=r,
     theta=theta,
@@ -245,7 +215,6 @@ fig_rose = go.Figure(go.Barpolar(
     marker_line_width=1,
     opacity=0.8
 ))
-
 fig_rose.update_layout(
     polar=dict(
         radialaxis=dict(title="Qt (tonnes/m)"),
@@ -253,5 +222,4 @@ fig_rose.update_layout(
     ),
     title=f"Average Directional Distribution of Snow Transport<br>Overall Qt: {overall_avg/1000:.1f} tonnes/m"
 )
-
 st.plotly_chart(fig_rose, use_container_width=True)

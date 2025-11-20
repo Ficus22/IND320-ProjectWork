@@ -5,7 +5,7 @@ from streamlit_folium import st_folium
 import json
 import pandas as pd
 from shapely.geometry import shape, Point
-from pymongo import MongoClient
+from utils.data_loader import load_mongo_data
 
 # -----------------------
 # Page config
@@ -74,32 +74,8 @@ days = st.sidebar.slider("Time interval (days)", 1, 30, 7)
 # -----------------------
 # Load selected dataset
 # -----------------------
-def load_mongo(collection):
-    try:
-        MONGO_URI = st.secrets["MONGO_URI"]
-        client = MongoClient(MONGO_URI)
-        db = client["elhub_data"]
-        coll = db[collection]
-        df = pd.DataFrame(list(coll.find({}, {
-            "_id": 0,
-            "price_area": 1,
-            "start_time": 1,
-            "quantity_kwh": 1
-        })))
-        if "start_time" in df.columns:
-            df["start_time"] = pd.to_datetime(df["start_time"])
-        return df
-    except Exception:
-        return pd.DataFrame(columns=["price_area", "start_time", "quantity_kwh"])
-
-if mode == "Production":
-    if "df_production" not in st.session_state:
-        st.session_state.df_production = load_mongo("production_data")
-    df = st.session_state.df_production
-else:
-    if "df_consumption" not in st.session_state:
-        st.session_state.df_consumption = load_mongo("consumption_data")
-    df = st.session_state.df_consumption
+collection_name = "production_data" if mode == "Production" else "consumption_data"
+df = load_mongo_data(collection_name)
 
 # -----------------------
 # Compute mean per area
@@ -129,7 +105,6 @@ if "last_pin" not in st.session_state:
     st.session_state.last_pin = [64.5, 11.0]
 if "selected_feature_id" not in st.session_state:
     st.session_state.selected_feature_id = None
-
 if st.session_state.selected_feature_id is None:
     lat, lon = st.session_state.last_pin
     st.session_state.selected_feature_id = find_feature_id(lon, lat)
@@ -138,13 +113,10 @@ if st.session_state.selected_feature_id is None:
 # Layout: map + info
 # -----------------------
 map_col, info_col = st.columns([2.4, 1])
-
 with map_col:
     m = folium.Map(location=st.session_state.last_pin, zoom_start=5, tiles="OpenStreetMap")
-
     df_vals = pd.DataFrame({"id": list(value_map.keys()),
                             "value": [v if v is not None else 0 for v in value_map.values()]})
-
     choropleth = folium.Choropleth(
         geo_data=geojson_data,
         data=df_vals,
@@ -158,7 +130,6 @@ with map_col:
         highlight=True
     )
     choropleth.add_to(m)
-
     # Highlight selected polygon
     if st.session_state.selected_feature_id is not None:
         sel_id = st.session_state.selected_feature_id
@@ -168,13 +139,11 @@ with map_col:
                 {"type": "FeatureCollection", "features": sel_feats},
                 style_function=lambda f: {"fillOpacity": 0, "color": "red", "weight": 3}
             ).add_to(m)
-
     # Pin marker
     folium.Marker(
         location=st.session_state.last_pin,
         icon=folium.Icon(color="red")
     ).add_to(m)
-
     # Capture click
     out = st_folium(m, key="map", height=650)
     if out and out.get("last_clicked"):
@@ -188,7 +157,6 @@ with info_col:
     st.subheader("Selection")
     st.write(f"Lat: {st.session_state.last_pin[0]:.6f}")
     st.write(f"Lon: {st.session_state.last_pin[1]:.6f}")
-
     fid = st.session_state.selected_feature_id
     if fid is None:
         st.write("Outside known features.")
