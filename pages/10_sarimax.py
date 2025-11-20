@@ -140,6 +140,9 @@ if run_button:
         
         if not exog_vars_existing:
             st.warning("No selected exogenous variables exist in the dataset.")
+            st.write("Columns in df_exog:", df_exog.columns.tolist())
+            st.write("Selected exogenous variables:", exog_vars)
+
             exog_train = None
             exog_forecast = None
         else:
