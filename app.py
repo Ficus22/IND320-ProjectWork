@@ -70,7 +70,7 @@ def sidebar_menu(pages_dict):
     selected_folder = folder_list[folder_clean_list.index(selected_clean)]
     st.session_state["current_folder"] = selected_folder
 
-    st.sidebar.markdown("### Pages in this section")
+    st.sidebar.markdown(f"### Pages in {selected_folder}")
 
     # ---- Buttons for pages ----
     for file in pages_dict[selected_folder]:
@@ -107,10 +107,7 @@ st.markdown("""
 Welcome to the **IND320 Weather Data Analysis Dashboard**.  
 This dashboard provides interactive visualizations and tables for the hourly weather data of January 2020.
 
-You can explore the following pages:  
-- **Data Table**: View the dataset in an interactive table and see line charts for the first month.  
-- **Visualizations**: Plot different weather variables with selectable columns and month ranges.  
-- **About**: Learn about the project, the author, technologies used, and AI assistance.
+**You can explore the differents pages through the different sections.** 
 
 Check out the project resources below:
 """)
