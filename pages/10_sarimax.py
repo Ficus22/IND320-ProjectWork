@@ -253,6 +253,11 @@ if run_button:
             # Vérifiez que forecast_start est bien un Timestamp
             if not isinstance(forecast_start, pd.Timestamp):
                 forecast_start = pd.Timestamp(forecast_start)
+            
+            print("Type de df_exog.index:", type(df_exog.index))
+            print("Type de forecast_start:", type(forecast_start))
+            print("Valeur de forecast_start:", forecast_start)
+            print("Exemple de valeur dans df_exog.index:", df_exog.index[0])
 
             # Filtrez les données
             exog_forecast = df_exog.loc[df_exog.index >= forecast_start, exog_vars].iloc[:forecast_horizon]
