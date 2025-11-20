@@ -8,6 +8,7 @@ from pymongo import MongoClient
 from scipy.stats import zscore
 import requests
 import time
+import os
 
 # -------------------------------------------------------
 # Page configuration
@@ -35,7 +36,7 @@ PRICE_AREAS = {
 }
 
 # -------------------------------------------------------
-# Mongo loader (reuse from previous page)
+# Mongo loader
 # -------------------------------------------------------
 @st.cache_data
 def load_mongo(collection: str) -> pd.DataFrame:
@@ -100,11 +101,10 @@ if series_energy.empty:
     st.stop()
 
 # -------------------------------------------------------
-# Weather loader (Open-Meteo ERA5)
+# Weather loader (Open-Meteo ERA5) with chunking and caching
 # -------------------------------------------------------
 OPENMETEO_ERA5 = "https://archive-api.open-meteo.com/v1/era5"
 
-@st.cache_data
 def download_weather_data(lat: float, lon: float, start_date: str, end_date: str,
                           hourly=("temperature_2m","precipitation","wind_speed_10m","wind_gusts_10m","wind_direction_10m")) -> pd.DataFrame:
     params = {
@@ -115,20 +115,42 @@ def download_weather_data(lat: float, lon: float, start_date: str, end_date: str
         "hourly": ",".join(hourly),
         "timezone": "UTC"
     }
-
     try:
         response = requests.get(OPENMETEO_ERA5, params=params, timeout=30)
         response.raise_for_status()
     except Exception as e:
         st.error(f"Failed to fetch weather data: {e}")
         return pd.DataFrame()
-
     hourly_data = response.json().get("hourly", {})
     df = pd.DataFrame({"time": pd.to_datetime(hourly_data.get("time", []), utc=True)})
     for v in hourly:
         df[v] = pd.to_numeric(hourly_data.get(v, []), errors="coerce")
     return df.set_index("time").sort_index()
 
+@st.cache_data
+def download_weather_data_chunked(lat, lon, start_date, end_date, hourly):
+    """Download weather in 3-month chunks to avoid 429 errors."""
+    df_list = []
+    start = pd.to_datetime(start_date)
+    end = pd.to_datetime(end_date)
+    chunk_size = pd.Timedelta(days=90)
+
+    while start <= end:
+        chunk_end = min(start + chunk_size, end)
+        df_chunk = download_weather_data(
+            lat=lat, lon=lon,
+            start_date=start.date().isoformat(),
+            end_date=chunk_end.date().isoformat(),
+            hourly=hourly
+        )
+        if not df_chunk.empty:
+            df_list.append(df_chunk)
+        start = chunk_end + pd.Timedelta(days=1)
+        time.sleep(1)  # optional delay to reduce request frequency
+
+    if df_list:
+        return pd.concat(df_list).sort_index()
+    return pd.DataFrame()
 
 # -------------------------------------------------------
 # Exogenous variables (weather)
@@ -169,20 +191,17 @@ run_button = st.button("▶️ Run Forecast")
 # -------------------------------------------------------
 if run_button:
     st.header("📈 Forecast results")
+    status_placeholder = st.empty()  # messages to user
 
-    # Placeholder to display status messages to the user
-    status_placeholder = st.empty()
-
-    # Show a spinner while the SARIMAX model is training
     with st.spinner("SARIMAX is training... ⏳"):
-        # --- Prepare training data ---
+        # --- Training data ---
         status_placeholder.info("📊 Preparing training data...")
         train_series = series_energy.loc[str(start_date):str(end_date)]
         if train_series.empty:
             st.error("No training data available for the selected date range.")
             st.stop()
 
-        # --- Prepare exogenous variables if selected ---
+        # --- Exogenous variables ---
         exog_train = None
         exog_forecast = None
         if exog_vars:
@@ -195,7 +214,7 @@ if run_button:
                 "NO5": (60.39, 5.33)
             }
             lat, lon = lat_lon_map[price_area]
-            df_weather = download_weather_data(
+            df_weather = download_weather_data_chunked(
                 lat=lat,
                 lon=lon,
                 start_date=series_energy.index.min().date().isoformat(),
@@ -205,14 +224,12 @@ if run_button:
             if df_weather.empty:
                 st.error("No weather data available.")
                 st.stop()
-            
-            # Join energy series with weather data and fill missing values
             df_exog = series_energy.to_frame().join(df_weather, how="left")
             df_exog.fillna(method="ffill", inplace=True)
             exog_train = df_exog.loc[str(start_date):str(end_date), exog_vars]
             exog_forecast = df_exog.loc[str(end_date)+":", exog_vars].iloc[:forecast_horizon]
 
-        # --- Fit SARIMAX model ---
+        # --- Fit SARIMAX ---
         status_placeholder.info("⚙️ Training SARIMAX model...")
         try:
             mod = sm.tsa.statespace.SARIMAX(
@@ -227,7 +244,7 @@ if run_button:
             st.error(f"Failed to fit SARIMAX model: {e}")
             st.stop()
 
-        # --- Generate forecast ---
+        # --- Forecast ---
         status_placeholder.info("📈 Generating forecast...")
         try:
             forecast_index = pd.date_range(
@@ -255,6 +272,5 @@ if run_button:
         ])
         st.plotly_chart(fig, use_container_width=True)
         st.write(res.summary())
-
 else:
     st.info("Set your options above and press **Run Forecast**.")
