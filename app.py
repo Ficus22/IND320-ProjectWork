@@ -56,15 +56,26 @@ def load_page(folder, file):
     module.app()
 
 # =========================================================
-# Sidebar Navigation
+# Initialize session state
+# =========================================================
+if "current_folder" not in st.session_state:
+    st.session_state["current_folder"] = None
+if "current_page" not in st.session_state:
+    st.session_state["current_page"] = None
+
+# =========================================================
+# Sidebar
 # =========================================================
 pages_dict = list_pages()
-st.sidebar.info("IND320 Project")
+
 
 # ---- HOME BUTTON ----
-if st.sidebar.button("🏠 Home"):
+if st.sidebar.button("🏠"):
     st.session_state["current_page"] = None
     st.session_state["current_folder"] = None
+    st.rerun()
+
+st.sidebar.info("IND320 Project")
 
 # ---- Folder selectbox ----
 folder_list = list(pages_dict.keys())
@@ -88,25 +99,6 @@ if st.session_state.get("current_page") is not None:
     st.stop()
 
 # =========================================================
-# Load current page
-# =========================================================
-def load_page(folder, file):
-    module_path = f"{PAGES_DIR}.{folder}.{file.replace('.py', '')}"
-    module = importlib.import_module(module_path)
-    module.app()
-
-# =========================================================
-# Sidebar + logic
-# =========================================================
-pages_dict = list_pages()
-sidebar_menu(pages_dict)
-
-# If a user selected a page, load it
-if st.session_state.get("current_page"):
-    load_page(st.session_state["current_folder"], st.session_state["current_page"])
-    st.stop()
-
-# =========================================================
 # HOME PAGE CONTENT
 # =========================================================
 st.title("🌦️ Weather Dashboard - IND320")
@@ -115,7 +107,7 @@ st.markdown("""
 Welcome to the **IND320 Weather Data Analysis Dashboard**.  
 This dashboard provides interactive visualizations and tables for the hourly weather data of January 2020.
 
-**You can explore the differents pages through the different sections.** 
+**You can explore the different pages through the different sections.**  
 
 Check out the project resources below:
 """)
