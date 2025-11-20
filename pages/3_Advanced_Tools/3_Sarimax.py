@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 from scipy.stats import zscore
 import time
 from utils.data_loader import load_mongo_data, download_weather_data_chunked
-from config import PRICE_AREAS, DEFAULT_HOURLY_VARIABLES
+from utils.config import PRICE_AREAS, DEFAULT_HOURLY_VARIABLES
 
 def app():
     # -------------------------------------------------------
