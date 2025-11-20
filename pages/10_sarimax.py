@@ -246,26 +246,33 @@ if run_button:
             
             # Training exogenous variables
             exog_train = df_exog.loc[str(start_date):str(end_date), exog_vars]
-            # --- Exemple corrigé ---
+            # --- Préparation de forecast_start ---
             forecast_start = pd.to_datetime(end_date) + freq_to_timedelta(freq)
-            df_exog.index = pd.to_datetime(df_exog.index)  # Assurez-vous que l'index est un DatetimeIndex
+            forecast_start = pd.Timestamp(forecast_start, tz='UTC')  # Force la timezone UTC
 
-            # Vérifiez que forecast_start est bien un Timestamp
-            if not isinstance(forecast_start, pd.Timestamp):
-                forecast_start = pd.Timestamp(forecast_start)
-            
             print("Type de df_exog.index:", type(df_exog.index))
             print("Type de forecast_start:", type(forecast_start))
             print("Valeur de forecast_start:", forecast_start)
             print("Exemple de valeur dans df_exog.index:", df_exog.index[0])
 
-            # Filtrez les données
-            exog_forecast = df_exog.loc[df_exog.index >= forecast_start, exog_vars].iloc[:forecast_horizon]
+            # --- Conversion de l'index de df_exog en DatetimeIndex avec timezone UTC ---
+            df_exog.index = pd.to_datetime(df_exog.index).tz_localize('UTC')
 
-            # Safety check
-            if exog_forecast.empty:
-                st.warning("No exogenous data available for forecast. Forecast will run without exogenous variables.")
+            # --- Vérification de la cohérence des données ---
+            if df_exog.empty:
+                st.error("No exogenous data available.")
                 exog_forecast = None
+            else:
+                # Vérifiez que forecast_start est dans la plage de df_exog.index
+                if forecast_start < df_exog.index.min() or forecast_start > df_exog.index.max():
+                    st.warning(f"forecast_start ({forecast_start}) is outside the range of exogenous data index ({df_exog.index.min()} to {df_exog.index.max()}).")
+                    exog_forecast = None
+                else:
+                    exog_forecast = df_exog.loc[df_exog.index >= forecast_start, exog_vars].iloc[:forecast_horizon]
+                    if exog_forecast.empty:
+                        st.warning("No exogenous data available for the forecast period. Forecast will run without exogenous variables.")
+                        exog_forecast = None
+
 
             status_placeholder.info("☁️ Weather data downloaded...")
 
