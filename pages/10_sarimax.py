@@ -88,6 +88,36 @@ freq = st.selectbox("Resample frequency", ["H","3H","6H","12H","D"])
 series_energy = prepare_energy_series(df_energy, price_area, freq)
 
 # -------------------------------------------------------
+# Weather loader (Open-Meteo ERA5)
+# -------------------------------------------------------
+OPENMETEO_ERA5 = "https://archive-api.open-meteo.com/v1/era5"
+
+@st.cache_data
+def download_weather_data(lat: float, lon: float, start_date: str, end_date: str,
+                          hourly=("temperature_2m","precipitation","wind_speed_10m","wind_gusts_10m","wind_direction_10m")) -> pd.DataFrame:
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "start_date": start_date,
+        "end_date": end_date,
+        "hourly": ",".join(hourly),
+        "timezone": "UTC"
+    }
+
+    try:
+        response = requests.get(OPENMETEO_ERA5, params=params, timeout=30)
+        response.raise_for_status()
+    except Exception as e:
+        st.error(f"Failed to fetch weather data: {e}")
+        return pd.DataFrame()
+
+    hourly_data = response.json().get("hourly", {})
+    df = pd.DataFrame({"time": pd.to_datetime(hourly_data.get("time", []), utc=True)})
+    for v in hourly:
+        df[v] = pd.to_numeric(hourly_data.get(v, []), errors="coerce")
+    return df.set_index("time").sort_index()
+
+# -------------------------------------------------------
 # Exogenous variables (weather)
 # -------------------------------------------------------
 st.subheader("🌡 Exogenous variables (optional)")
@@ -133,28 +163,33 @@ if run_button:
     exog_forecast = None
 
     if exog_vars:
-        df_exog = df_energy[df_energy["price_area"] == price_area].copy()
-        
-        # Keep only exogenous variables that exist in df_exog
-        exog_vars_existing = [col for col in exog_vars if col in df_exog.columns]
-        
-        if not exog_vars_existing:
-            st.warning("No selected exogenous variables exist in the dataset.")
-            st.write("Columns in df_exog:", df_exog.columns.tolist())
-            st.write("Selected exogenous variables:", exog_vars)
+        # Download weather data for the city/price_area
+        lat_lon_map = {
+            "NO1": (59.91, 10.75),
+            "NO2": (58.15, 8.00),
+            "NO3": (63.43, 10.39),
+            "NO4": (69.65, 18.95),
+            "NO5": (60.39, 5.33)
+        }
+        lat, lon = lat_lon_map[price_area]
+        df_weather = download_weather_data(
+            lat=lat,
+            lon=lon,
+            start_date=series_energy.index.min().date().isoformat(),
+            end_date=series_energy.index.max().date().isoformat(),
+            hourly=exog_vars
+        )
 
-            exog_train = None
-            exog_forecast = None
-        else:
-            # Convert to numeric (coerce errors)
-            df_exog_numeric = df_exog[exog_vars_existing].apply(pd.to_numeric, errors='coerce')
-            
-            # Resample and forward-fill
-            df_exog_resampled = df_exog_numeric.set_index(df_exog["start_time"]).resample(freq).mean().fillna(method="ffill")
-            
-            # Split train/forecast
-            exog_train = df_exog_resampled.loc[str(start_date):str(end_date)]
-            exog_forecast = df_exog_resampled.loc[str(end_date)+":"]
+        # Merge energy and weather on the timestamp
+        df_exog = series_energy.to_frame().join(df_weather, how="left")
+
+        # Forward-fill missing weather data
+        df_exog.fillna(method="ffill", inplace=True)
+
+        # Prepare exogenous train/forecast
+        exog_train = df_exog.loc[str(start_date):str(end_date), exog_vars]
+        exog_forecast = df_exog.loc[str(end_date)+":", exog_vars]
+
 
 
     # Fit SARIMAX
