@@ -171,40 +171,59 @@ def app():
     # --- Tab 1: Outlier/SPC ---
     with tab1:
         st.header(f"Outlier / SPC Analysis for {city}")
-        groups = df["production_group"].dropna().unique()
-        selected_group = st.selectbox("Select Production Group", groups)
-        cutoff_frequency = st.slider("DCT High-pass cutoff frequency", min_value=0.0, max_value=1.0, value=0.3)
-        n_std = st.number_input("SPC sensitivity", value=3, step=1)
-        show_normalized = st.checkbox("Display normalized output", value=False)
-
-        df_tab1 = df[(df["price_area"] == price_area) & (df["production_group"] == selected_group)]
-        if df_tab1.empty:
-            st.info("No data available for this selection.")
+        
+        # Use only temperature data for SPC
+        if "temperature_c" not in df.columns:
+            st.error("Temperature data not available for SPC analysis.")
         else:
-            df_tab1["start_time"] = pd.to_datetime(df_tab1["start_time"]).dt.tz_localize(None)
-            df_tab1 = df_tab1.set_index("start_time")
-            numeric_cols = df_tab1.select_dtypes(include="number").columns
-            df_tab1_resampled = df_tab1[numeric_cols].resample("H").sum().interpolate()
-            plot_temperature_spc_dct_plotly(
-                df_tab1_resampled["quantity_kwh"],
-                df_tab1_resampled.index,
-                cutoff_frequency=cutoff_frequency,
-                n_std=n_std,
-                show_normalized=show_normalized
+            df_temp = df[df["price_area"] == price_area].copy()
+            df_temp["start_time"] = pd.to_datetime(df_temp["start_time"]).dt.tz_localize(None)
+            df_temp = df_temp.set_index("start_time")
+            df_temp_resampled = df_temp["temperature_c"].resample("H").mean().interpolate()
+
+            n_std = st.number_input("SPC sensitivity", value=3, step=1)
+
+            # Calculate SPC bounds based on DCT (SATV)
+            dct_filtered = high_pass_filter(df_temp_resampled.values)
+            lower, upper, median = calculate_spc_boundaries(dct_filtered, n_std=n_std)
+
+            # Identify outliers based on SPC bounds
+            outliers = (df_temp_resampled < lower) | (df_temp_resampled > upper)
+
+            # Plot raw temperature with SPC bounds and outliers
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=df_temp_resampled.index,
+                y=df_temp_resampled.values,
+                mode='lines',
+                name='Temperature (°C)',
+                line=dict(color='blue')
+            ))
+            fig.add_trace(go.Scatter(
+                x=df_temp_resampled.index,
+                y=[upper]*len(df_temp_resampled),
+                mode='lines',
+                name='Upper Bound (SPC)',
+                line=dict(color='green', dash='dash')
+            ))
+            fig.add_trace(go.Scatter(
+                x=df_temp_resampled.index,
+                y=[lower]*len(df_temp_resampled),
+                mode='lines',
+                name='Lower Bound (SPC)',
+                line=dict(color='red', dash='dash')
+            ))
+            fig.add_trace(go.Scatter(
+                x=df_temp_resampled.index[outliers],
+                y=df_temp_resampled.values[outliers],
+                mode='markers',
+                name='Outliers',
+                marker=dict(color='red', size=7)
+            ))
+
+            fig.update_layout(
+                title=f"Temperature SPC Analysis (n_std={n_std})",
+                hovermode="x unified",
+                yaxis=dict(title="Temperature (°C)")
             )
-
-    # --- Tab 2: Anomaly/LOF ---
-    with tab2:
-        st.header(f"Anomaly Detection with LOF for {city}")
-        selected_group_lof = st.selectbox("Select Production Group", groups, key="lof_group")
-        contamination = st.slider("Expected outliers (%)", min_value=0.0, max_value=10.0, value=1.0) / 100
-
-        df_tab2 = df[(df["price_area"] == price_area) & (df["production_group"] == selected_group_lof)]
-        if df_tab2.empty:
-            st.info("No data available for this selection.")
-        else:
-            df_tab2["start_time"] = pd.to_datetime(df_tab2["start_time"]).dt.tz_localize(None)
-            df_tab2 = df_tab2.set_index("start_time")
-            numeric_cols = df_tab2.select_dtypes(include="number").columns
-            df_tab2_resampled = df_tab2[numeric_cols].resample("H").sum().interpolate()
-            plot_precipitation_with_lof(df_tab2_resampled["quantity_kwh"], df_tab2_resampled.index, contamination=contamination)
+            st.plotly_chart(fig, use_container_width=True)
