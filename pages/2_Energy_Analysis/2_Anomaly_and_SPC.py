@@ -5,7 +5,7 @@ import numpy as np
 import plotly.graph_objects as go
 from scipy.fftpack import dct, idct
 from sklearn.neighbors import LocalOutlierFactor
-from utils.data_loader import load_mongo_data
+from utils.data_loader import load_mongo_data, load_weather_data
 from utils.config import PRICE_AREAS
 
 def app():
@@ -171,26 +171,27 @@ def app():
     # --- Tab 1: Outlier/SPC ---
     with tab1:
         st.header(f"Outlier / SPC Analysis for {city}")
-        
-        # Use only temperature data for SPC
-        if "temperature_c" not in df.columns:
+
+        year = st.number_input("Year", min_value=2000, max_value=2030, value=2025, step=1)
+        n_std = st.number_input("SPC sensitivity", value=3, step=1)
+
+        # Load weather data (temperature)
+        df_temp = load_weather_data(price_area, year)
+        if "temperature_2m" not in df_temp.columns:
             st.error("Temperature data not available for SPC analysis.")
         else:
-            df_temp = df[df["price_area"] == price_area].copy()
-            df_temp["start_time"] = pd.to_datetime(df_temp["start_time"]).dt.tz_localize(None)
-            df_temp = df_temp.set_index("start_time")
-            df_temp_resampled = df_temp["temperature_c"].resample("H").mean().interpolate()
+            df_temp["time"] = pd.to_datetime(df_temp["time"]).dt.tz_localize(None)
+            df_temp = df_temp.set_index("time")
+            df_temp_resampled = df_temp["temperature_2m"].resample("H").mean().interpolate()
 
-            n_std = st.number_input("SPC sensitivity", value=3, step=1)
-
-            # Calculate SPC bounds based on DCT (SATV)
+            # DCT / SATV filtering to calculate SPC bounds
             dct_filtered = high_pass_filter(df_temp_resampled.values)
             lower, upper, median = calculate_spc_boundaries(dct_filtered, n_std=n_std)
 
-            # Identify outliers based on SPC bounds
+            # Identify outliers (based on SPC bounds from DCT)
             outliers = (df_temp_resampled < lower) | (df_temp_resampled > upper)
 
-            # Plot raw temperature with SPC bounds and outliers
+            # Plot raw temperature + SPC bounds + outliers
             fig = go.Figure()
             fig.add_trace(go.Scatter(
                 x=df_temp_resampled.index,
@@ -227,3 +228,20 @@ def app():
                 yaxis=dict(title="Temperature (°C)")
             )
             st.plotly_chart(fig, use_container_width=True)
+
+
+    # --- Tab 2: Anomaly/LOF ---
+    with tab2:
+        st.header(f"Anomaly Detection with LOF for {city}")
+        selected_group_lof = st.selectbox("Select Production Group", groups, key="lof_group")
+        contamination = st.slider("Expected outliers (%)", min_value=0.0, max_value=10.0, value=1.0) / 100
+
+        df_tab2 = df[(df["price_area"] == price_area) & (df["production_group"] == selected_group_lof)]
+        if df_tab2.empty:
+            st.info("No data available for this selection.")
+        else:
+            df_tab2["start_time"] = pd.to_datetime(df_tab2["start_time"]).dt.tz_localize(None)
+            df_tab2 = df_tab2.set_index("start_time")
+            numeric_cols = df_tab2.select_dtypes(include="number").columns
+            df_tab2_resampled = df_tab2[numeric_cols].resample("H").sum().interpolate()
+            plot_precipitation_with_lof(df_tab2_resampled["quantity_kwh"], df_tab2_resampled.index, contamination=contamination)
