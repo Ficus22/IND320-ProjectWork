@@ -124,6 +124,13 @@ if not dfs:
 
 df_all = pd.concat(dfs, ignore_index=True)
 
+# Ensure 'time' is datetime
+df_all['time'] = pd.to_datetime(df_all['time'], errors='coerce')
+
+# Drop rows where 'time' could not be converted
+df_all = df_all.dropna(subset=['time'])
+
+
 # ---------------------------
 # Compute yearly snow drift
 # ---------------------------
