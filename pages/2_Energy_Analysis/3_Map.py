@@ -66,11 +66,11 @@ def app():
         return None
 
     # -----------------------
-    # Sidebar: choose Production or Consumption
+    # Settings (on page, not sidebar)
     # -----------------------
-    st.sidebar.header("Settings")
-    mode = st.sidebar.radio("Select data type", ["Production", "Consumption"])
-    days = st.sidebar.slider("Time interval (days)", 1, 30, 7)
+    st.subheader("Settings")
+    mode = st.radio("Select data type", ["Production", "Consumption"])
+    days = st.slider("Time interval (days)", 1, 30, 7)
 
     # -----------------------
     # Load selected dataset
