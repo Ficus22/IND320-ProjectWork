@@ -219,6 +219,14 @@ if run_button:
     st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("🔄 Sliding-window correlation")
+    st.markdown("""
+The **correlation over time** shows how strongly the selected meteorological variable and energy series are related during each sliding window.  
+- **Positive correlation (~1)**: When the weather variable increases, energy also increases.  
+- **Negative correlation (~-1)**: When the weather variable increases, energy decreases.  
+- **Near zero (~0)**: Little to no linear relationship in that period.  
+
+Use this to detect periods when the weather has the most impact on energy production or consumption.
+""")
     fig_corr = px.line(x=corr_series.index, y=corr_series.values,
                        labels={"x":"Time", "y":"Correlation"},
                        title="Correlation over time")
@@ -253,6 +261,14 @@ if run_button:
 
     # 4) Lag scan
     st.subheader("⏳ Lag effect scan")
+    st.markdown("""
+The **lag scan** explores delayed effects of weather on energy.  
+- The x-axis is the lag (in periods) between weather and energy.  
+- The y-axis is the **mean correlation** for each lag.  
+- Peaks indicate the lag at which the weather most strongly affects energy.  
+
+For example, if the highest correlation occurs at lag = 3 hours, it means changes in the weather influence energy about 3 hours later.
+""")
     lags = range(-72, 73)
     mean_corrs = [compute_rolled_corr(series_met, series_energy, window_len, L).mean() for L in lags]
     fig_lag = px.line(x=list(lags), y=mean_corrs,
