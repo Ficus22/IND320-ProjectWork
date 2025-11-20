@@ -50,34 +50,42 @@ def list_pages():
             pages[folder] = sorted(files)
     return pages
 
+def load_page(folder, file):
+    module_path = f"{PAGES_DIR}.{folder}.{file.replace('.py', '')}"
+    module = importlib.import_module(module_path)
+    module.app()
+
 # =========================================================
-# Sidebar Navigation UI
+# Sidebar Navigation
 # =========================================================
-def sidebar_menu(pages_dict):
+pages_dict = list_pages()
+st.sidebar.info("IND320 Project")
 
-    # ---- HOME BUTTON ----
-    if st.sidebar.button("🏠 Home"):
-        st.session_state["current_page"] = None
-        st.session_state["current_folder"] = None
+# ---- HOME BUTTON ----
+if st.sidebar.button("🏠 Home"):
+    st.session_state["current_page"] = None
+    st.session_state["current_folder"] = None
 
-    st.sidebar.markdown("---")
+# ---- Folder selectbox ----
+folder_list = list(pages_dict.keys())
+folder_clean_list = [clean_name(f) for f in folder_list]
 
-    # ---- Folder selectbox ----
-    folder_list = list(pages_dict.keys())
-    folder_clean_list = [clean_name(f) for f in folder_list]
+selected_clean = st.sidebar.selectbox("📂 Section", folder_clean_list)
+selected_folder = folder_list[folder_clean_list.index(selected_clean)]
+st.session_state["current_folder"] = selected_folder
 
-    selected_clean = st.sidebar.selectbox("## 📂 Section", folder_clean_list)
-    selected_folder = folder_list[folder_clean_list.index(selected_clean)]
-    st.session_state["current_folder"] = selected_folder
+# ---- Page selectbox ----
+page_list = pages_dict[selected_folder]
+page_clean_list = [clean_name(f) for f in page_list]
 
-    st.sidebar.markdown(f"### Pages in {selected_clean}")
+selected_page_clean = st.sidebar.selectbox(f"📄 Pages in {selected_clean}", page_clean_list)
+selected_page = page_list[page_clean_list.index(selected_page_clean)]
+st.session_state["current_page"] = selected_page
 
-    # ---- Buttons for pages ----
-    for file in pages_dict[selected_folder]:
-        label = f"{clean_name(file)}"
-        if st.sidebar.button(label):
-            st.session_state["current_page"] = file
-            st.rerun()
+# ---- Load page if selected ----
+if st.session_state.get("current_page") is not None:
+    load_page(st.session_state["current_folder"], st.session_state["current_page"])
+    st.stop()
 
 # =========================================================
 # Load current page
