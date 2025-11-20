@@ -14,7 +14,7 @@ st.set_page_config(page_title="Anomaly & SPC Analysis", layout="wide")
 # Check if price area selected
 # -------------------------
 if "selected_price_area" not in st.session_state:
-    st.warning("Please select a Price Area on the Energy Production Dashboard first.")
+    st.warning("Please select a Price Area on the Elhub API page first.")
     st.stop()
 
 price_area = st.session_state.selected_price_area

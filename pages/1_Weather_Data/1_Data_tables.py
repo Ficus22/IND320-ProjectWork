@@ -3,33 +3,41 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from utils.data_loader import load_weather_data
-from utils.config import PRICE_AREAS
+from utils.config import PRICE_AREAS, DEFAULT_PRICE_AREA
 
 def app():
-    # --- Retrieve selected price area from another page ---
-    if "selected_price_area" not in st.session_state:
-        st.error("No price area selected. Please select a Price Area on the Energy Production Dashboard first.")
-        st.stop()
+    st.title("📊 Weather Data Table")
 
-    price_area = st.session_state.selected_price_area
+    # --- Price Area Selection ---
+    price_area_options = [
+        f"{pa} ({PRICE_AREAS[pa]['city']})" for pa in PRICE_AREAS
+    ]
+    default_idx = list(PRICE_AREAS.keys()).index(DEFAULT_PRICE_AREA)
+    selected_option = st.selectbox("Select Price Area", price_area_options, index=default_idx)
 
-    if price_area not in PRICE_AREAS:
-        st.error(f"Unknown price area: {price_area}")
-        st.stop()
+    # Extract price area code from selection
+    price_area = selected_option.split(" ")[0]
 
-    city = PRICE_AREAS[price_area]["city"]
-    st.title(f"📊 Weather Data Table for {city}")
+    # Store selection in session_state for access on other pages
+    st.session_state.selected_price_area = price_area
 
     # --- Year selection ---
     year = st.number_input(
         "Select year:",
         min_value=2000,
         max_value=datetime.now().year,
-        value=2021
+        value=datetime.now().year
     )
+
+    city = PRICE_AREAS[price_area]["city"]
+    st.subheader(f"Weather Data for {city} in {year}")
 
     # --- Load weather data ---
     df = load_weather_data(price_area, year)
+
+    if df.empty:
+        st.warning("No data available for this selection.")
+        return
 
     # --- Display table ---
     st.dataframe(
@@ -49,4 +57,7 @@ def app():
     # --- Plot temperature for January ---
     st.subheader(f"Temperature for January {year} in {city}")
     first_month = df[df['time'].dt.month == 1]
-    st.line_chart(first_month.set_index('time')['temperature_2m'])
+    if not first_month.empty:
+        st.line_chart(first_month.set_index('time')['temperature_2m'])
+    else:
+        st.info("No data for January.")

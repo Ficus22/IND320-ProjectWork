@@ -15,7 +15,7 @@ st.set_page_config(page_title="STL & Spectrogram Analysis", layout="wide")
 # Check if a price area was selected
 # -------------------------
 if "selected_price_area" not in st.session_state:
-    st.warning("Please select a Price Area on the Energy Production Dashboard first.")
+    st.warning("Please select a Price Area on the Data tables page first.")
     st.stop()
 
 price_area = st.session_state.selected_price_area
