@@ -35,7 +35,7 @@ if "selected_feature_id" not in st.session_state or st.session_state.selected_fe
 
 lat, lon = st.session_state.last_pin
 fid = st.session_state.selected_feature_id
-st.write(f"Selected location: ID={fid}, Lat={lat:.3f}, Lon={lon:.3f}, city={PRICE_AREAS[fid]}")
+st.write(f"Selected location: ID={fid}, Lat={lat:.3f}, Lon={lon:.3f}, city={type(fid)}")
 
 # ---------------------------
 # Year range selector
