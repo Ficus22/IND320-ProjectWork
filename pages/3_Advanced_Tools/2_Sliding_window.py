@@ -106,12 +106,21 @@ def app():
 
     @st.cache_data
     def compute_rolled_corr(series_met: pd.Series, series_eng: pd.Series, window_hours: int, lag_hours: int) -> pd.Series:
+        # Ensure both series are timezone-naive
+        series_met = series_met.tz_localize(None) if hasattr(series_met.index, 'tz') and series_met.index.tz is not None else series_met
+        series_eng = series_eng.tz_localize(None) if hasattr(series_eng.index, 'tz') and series_eng.index.tz is not None else series_eng
+
         if lag_hours != 0:
             series_eng = series_eng.shift(-lag_hours)
+
+        # Concatenate and drop NA values
         df = pd.concat([series_met, series_eng], axis=1).dropna()
+
         if df.empty:
             return pd.Series([], dtype=float)
-        return sliding_window_correlation(df.iloc[:,0], df.iloc[:,1], window_hours)
+
+        return sliding_window_correlation(df.iloc[:, 0], df.iloc[:, 1], window_hours)
+
 
     # -------------------------------------------------------
     # RUN COMPUTATION
@@ -146,10 +155,9 @@ def app():
             # Resample weather data
             series_met = df_weather[met_col].resample(freq).mean()
 
-            # Check if resampling worked
-            if series_met.empty:
-                st.error("Resampled weather data is empty. Check the frequency and data range.")
-                st.stop()
+            # Ensure both series are timezone-naive
+            series_met = series_met.tz_localize(None) if hasattr(series_met.index, 'tz') and series_met.index.tz is not None else series_met
+            series_energy = series_energy.tz_localize(None) if hasattr(series_energy.index, 'tz') and series_energy.index.tz is not None else series_energy
 
             # Compute correlation
             corr_series = compute_rolled_corr(series_met, series_energy, window_len, lag)
