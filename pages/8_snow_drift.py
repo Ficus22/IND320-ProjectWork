@@ -22,11 +22,11 @@ Qt represents the **snow mass transported by wind per meter**. We show **yearly 
 # Map selection check
 # ---------------------------
 PRICE_AREAS = {
-    "8": "Oslo",
-    "6": "Kristiansand",
-    "9": "Trondheim",
-    "10": "Tromsø",
-    "7": "Bergen"
+    8: "Oslo",
+    6: "Kristiansand",
+    9: "Trondheim",
+    10: "Tromsø",
+    7: "Bergen"
 }
 
 if "selected_feature_id" not in st.session_state or st.session_state.selected_feature_id is None:
@@ -35,7 +35,7 @@ if "selected_feature_id" not in st.session_state or st.session_state.selected_fe
 
 lat, lon = st.session_state.last_pin
 fid = st.session_state.selected_feature_id
-st.write(f"Selected location: ID={fid}, Lat={lat:.3f}, Lon={lon:.3f}, city={type(fid)}")
+st.write(f"Selected location: ID={fid}, Lat={lat:.3f}, Lon={lon:.3f}, city={PRICE_AREAS[fid]}")
 
 # ---------------------------
 # Year range selector
