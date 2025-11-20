@@ -196,5 +196,6 @@ def app():
       - Integrating snow drift calculations into Streamlit with dynamic plotting.
       - Converting Sliding Window Correlation to Streamlit with Plotly.
       - Implementing the SARIMAX forecasting interface and visualizations.
+      - Explain the SARIMAX parameters.
       - Translating the project into English.
       """)
