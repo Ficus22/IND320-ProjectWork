@@ -153,6 +153,10 @@ if yearly_df.empty:
 
 yearly_df["Qt_tonnes"] = yearly_df["Qt (kg/m)"] / 1000
 
+# Assign a datetime for plotting: first month of the season (July)
+yearly_df['plot_time'] = yearly_df['season'].apply(lambda s: pd.Timestamp(int(s.split('-')[0]), 7, 1))
+
+
 # ---------------------------
 # Compute monthly snow drift
 # ---------------------------
@@ -177,7 +181,6 @@ monthly_df["Qt_tonnes"] = monthly_df["Qt (kg/m)"] / 1000
 # ---------------------------
 # Plot both yearly and monthly Qt
 # ---------------------------
-import plotly.graph_objects as go
 
 fig = go.Figure()
 
