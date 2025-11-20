@@ -190,17 +190,19 @@ run_button = st.button("▶️ Run Forecast")
 # Run forecast
 # -------------------------------------------------------
 
-# Convert user-selected freq string to a proper Timedelta
+# Convert freq string to Timedelta safely
 def freq_to_timedelta(freq_str):
     if freq_str.endswith("H"):
-        hours = int(freq_str[:-1])  # remove "H" and convert to int
+        n = freq_str[:-1]
+        hours = int(n) if n else 1  # default to 1 hour
         return pd.Timedelta(hours=hours)
     elif freq_str.endswith("D"):
-        days = int(freq_str[:-1])  # remove "D" and convert to int
+        n = freq_str[:-1]
+        days = int(n) if n else 1  # default to 1 day
         return pd.Timedelta(days=days)
     else:
-        # fallback: 1 hour
-        return pd.Timedelta(hours=1)
+        return pd.Timedelta(hours=1)  # fallback
+
 
 if run_button:
     st.header("📈 Forecast results")
