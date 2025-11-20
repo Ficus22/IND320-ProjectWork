@@ -7,6 +7,7 @@ from datetime import timedelta
 from pymongo import MongoClient
 import requests
 from scipy.stats import ttest_ind
+from scipy.stats import zscore
 
 # -------------------------------------------------------
 # Page configuration
@@ -180,6 +181,7 @@ The tool compares correlation *during these extreme periods vs the rest of the t
     if event_mode == "By date range":
         date_range = st.date_input("Range (start, end)")
 
+    normalize_plot = st.checkbox("Normalize series for plotting (z-score)", value=False)
     run_button = st.button("▶️ Run Analysis")
 
 # -------------------------------------------------------
@@ -198,10 +200,22 @@ if run_button:
 
     corr_series = compute_rolled_corr(series_met, series_energy, window_len, lag)
 
+   
+
+    series_energy_plot = series_energy
+    series_met_plot = series_met
+
+    if normalize_plot:
+        # Align both series
+        df_align = pd.concat([series_energy, series_met], axis=1).dropna()
+        series_energy_plot = pd.Series(zscore(df_align["quantity_kwh"]), index=df_align.index, name="quantity_kwh")
+        series_met_plot = pd.Series(zscore(df_align[met_col]), index=df_align.index, name=met_col)
+
+
     # ===================== PLOTS =========================
 
-    st.subheader("📌 Aligned time-series")
-    fig = px.line(pd.concat([series_met.rename(met_col), series_energy], axis=1).dropna())
+    st.subheader("📌 Aligned time-series (normalized)" if normalize_plot else "📌 Aligned time-series")
+    fig = px.line(pd.concat([series_met_plot, series_energy_plot], axis=1))
     st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("🔄 Sliding-window correlation")
@@ -239,8 +253,7 @@ if run_button:
 
     # 4) Lag scan
     st.subheader("⏳ Lag effect scan")
-    lag_range = st.slider("Lag scan range (hours)", 1, 168, 48)
-    lags = range(-lag_range, lag_range+1)
+    lags = range(-72, 73)
     mean_corrs = [compute_rolled_corr(series_met, series_energy, window_len, L).mean() for L in lags]
     fig_lag = px.line(x=list(lags), y=mean_corrs,
                       labels={"x":"Lag (periods)", "y":"Mean correlation"})
