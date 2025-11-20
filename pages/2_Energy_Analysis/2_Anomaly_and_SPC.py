@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from scipy.fftpack import dct, idct
 from sklearn.neighbors import LocalOutlierFactor
 from utils.data_loader import load_mongo_data, load_weather_data
-from utils.config import PRICE_AREAS
+from utils.config import PRICE_AREAS, DEFAULT_YEAR, MAX_YEAR, MIN_YEAR
 
 def app():
     st.set_page_config(page_title="Anomaly & SPC Analysis", layout="wide")
@@ -172,7 +172,7 @@ def app():
     with tab1:
         st.header(f"Outlier / SPC Analysis for {city}")
 
-        year = st.number_input("Year", min_value=2000, max_value=2030, value=2025, step=1)
+        year = st.number_input("Year", min_value=MIN_YEAR, max_value=MAX_YEAR, value=DEFAULT_YEAR, step=1)
         n_std = st.number_input("SPC sensitivity", value=3, step=1)
 
         # Load weather data (temperature)
