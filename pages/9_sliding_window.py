@@ -12,7 +12,7 @@ import requests
 st.set_page_config(page_title="Meteorology & Energy — Sliding Window Correlation", layout="wide")
 
 # -----------------------
-# Helper: Mongo loader (uses your function style)
+# Helper: Mongo loader
 # -----------------------
 @st.cache_data
 def load_mongo(collection: str) -> pd.DataFrame:
@@ -100,9 +100,19 @@ def prepare_energy_series(df_energy: pd.DataFrame, price_area: str, resample_fre
 # -----------------------
 # Sliding window correlation helpers
 # -----------------------
-@st.cache_data
-def sliding_window_correlation(series_x: pd.Series, series_y: pd.Series, window: int) -> pd.Series:
-    return series_x.rolling(window=window, min_periods=2).corr(series_y)
+def sliding_window_correlation(x: pd.Series, y: pd.Series, window: int) -> pd.Series:
+    """
+    Compute sliding/rolling Pearson correlation between two aligned Series.
+    window is number of samples (e.g. hours if resampled hourly).
+    """
+    if not isinstance(x, pd.Series) or not isinstance(y, pd.Series):
+        raise TypeError("x and y must be pandas Series")
+
+    if len(x) != len(y):
+        raise ValueError("x and y must be aligned and have same length")
+
+    return x.rolling(window=window).corr(y)
+
 
 
 def compute_rolled_corr(series_met: pd.Series, series_eng: pd.Series, window_hours: int, lag_hours: int) -> pd.Series:
@@ -118,7 +128,7 @@ def compute_rolled_corr(series_met: pd.Series, series_eng: pd.Series, window_hou
         return pd.Series([], dtype=float)
     x = df2.iloc[:, 0]
     y = df2.iloc[:, 1]
-    corr = sliding_window_correlation(x, y, window)
+    corr = sliding_window_correlation(x, y, window_hours)
     return corr
 
 # -----------------------
