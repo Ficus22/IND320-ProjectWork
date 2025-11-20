@@ -54,13 +54,11 @@ def list_pages():
 # Sidebar Navigation UI
 # =========================================================
 def sidebar_menu(pages_dict):
-    st.sidebar.title("Navigation")
 
     # ---- HOME BUTTON ----
     if st.sidebar.button("🏠 Home"):
         st.session_state["current_page"] = None
         st.session_state["current_folder"] = None
-        st.rerun()
 
     st.sidebar.markdown("---")
 
@@ -68,15 +66,15 @@ def sidebar_menu(pages_dict):
     folder_list = list(pages_dict.keys())
     folder_clean_list = [clean_name(f) for f in folder_list]
 
-    selected_clean = st.sidebar.selectbox("📁 Section", folder_clean_list)
+    selected_clean = st.sidebar.selectbox("## 📂 Section", folder_clean_list)
     selected_folder = folder_list[folder_clean_list.index(selected_clean)]
     st.session_state["current_folder"] = selected_folder
 
-    st.sidebar.markdown(f"### 📂 {clean_name(selected_folder)}")
+    st.sidebar.markdown("### Pages in this section")
 
     # ---- Buttons for pages ----
     for file in pages_dict[selected_folder]:
-        label = f"🔹 {clean_name(file)}"
+        label = f"{clean_name(file)}"
         if st.sidebar.button(label):
             st.session_state["current_page"] = file
             st.rerun()
