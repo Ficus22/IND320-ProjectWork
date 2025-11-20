@@ -159,19 +159,20 @@ Resampling aligns them to a common time step (e.g., hourly or daily) to make com
     freq = st.selectbox("Time resolution", ["H","3H","6H","12H","D"])
 
     st.markdown("""
-**🌡⚡ Meteorological & Signal Parameters**  
-- **Variable**: Chooses the weather feature affecting energy  
-- **Sliding window**: Groups consecutive time points to compute one correlation (smooth vs reactive)  
-- **Lag**: Tests whether weather impacts energy with delay (e.g. heating reaction to cold)
+**🌡 Meteorological & Signal Parameters**  
 """)
+    st.caption("Choose the weather feature affecting energy. This is the meteorological factor whose influence you want to study.")
     met_col = st.selectbox("Meteorological variable", ["temperature_2m","precipitation","wind_speed_10m","wind_gusts_10m","wind_direction_10m"])
-    window_len = st.slider("Sliding window (in periods)", 3, 24*30, 24)
-    lag = st.slider("Lag (periods) — positive = weather leads", -168, 168, 0)
+    
+    st.caption("Groups consecutive time points to compute one correlation. Larger window → smoother correlation; smaller window → more reactive to short-term changes.")
+    window_len = st.slider("Sliding window (in hours)", 3, 24*30, 24)
+    
+    st.caption("Tests whether weather impacts energy with a delay. Positive lag → weather leads, energy responds later; Negative lag → energy leads. Helps identify the delay at which weather most strongly affects energy.")
+    lag = st.slider("Lag (in hours)", -168, 168, 0)
 
     st.markdown("""
 **🌪 Highlight extreme events**  
-This highlights periods where the chosen weather variable is unusually high/low or within a selected date range.  
-The tool compares correlation *during these extreme periods vs the rest of the time* to see if weather influence changes.
+This highlights periods where the chosen weather variable is unusually high/low or within a selected date range. The tool compares correlation during these extreme periods vs the rest of the time to see if weather influence changes.
 """)
     event_mode = st.radio("Highlight method", ["None", "By threshold", "By date range"])
     thr_val = None
