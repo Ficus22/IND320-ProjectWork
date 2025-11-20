@@ -124,11 +124,13 @@ if not dfs:
 
 df_all = pd.concat(dfs, ignore_index=True)
 
-# Ensure 'time' is datetime
-df_all['time'] = pd.to_datetime(df_all['time'], errors='coerce')
+# Remove the time zone
+df_all['time'] = df_all['time'].astype(str).str[:-6]
 
-# Drop rows where 'time' could not be converted
-df_all = df_all.dropna(subset=['time'])
+# Convert to datetime
+df_all['time'] = pd.to_datetime(df_all['time'], errors='coerce', utc=True)
+
+
 
 
 # ---------------------------
