@@ -90,14 +90,18 @@ def compute_yearly_results(df, T, F, theta):
     seasons = sorted(df['season'].unique())
     results_list = []
     for s in seasons:
-        season_start = pd.Timestamp(year=s, month=7, day=1)
-        season_end = pd.Timestamp(year=s+1, month=6, day=30, hour=23, minute=59, second=59)
+        # Make timestamps timezone-aware
+        season_start = pd.Timestamp(year=s, month=7, day=1, tz='UTC')
+        season_end = pd.Timestamp(year=s+1, month=6, day=30, hour=23, minute=59, second=59, tz='UTC')
+        
         df_season = df[(df['time'] >= season_start) & (df['time'] <= season_end)]
         if df_season.empty:
             continue
+        
         df_season = df_season.copy()
         df_season['Swe_hourly'] = df_season.apply(
-            lambda row: row['precipitation'] if row['temperature_2m'] < 1 else 0, axis=1)
+            lambda row: row['precipitation'] if row['temperature_2m'] < 1 else 0, axis=1
+        )
         total_Swe = df_season['Swe_hourly'].sum()
         wind_speeds = df_season["wind_speed_10m"].tolist()
         result = compute_snow_transport(T, F, theta, total_Swe, wind_speeds)
