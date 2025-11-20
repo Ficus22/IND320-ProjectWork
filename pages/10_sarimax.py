@@ -205,7 +205,7 @@ if run_button:
         exog_train = None
         exog_forecast = None
         if exog_vars:
-            status_placeholder.info("☁️ Downloading weather data...")
+
             lat_lon_map = {
                 "NO1": (59.91, 10.75),
                 "NO2": (58.15, 8.00),
@@ -224,10 +224,24 @@ if run_button:
             if df_weather.empty:
                 st.error("No weather data available.")
                 st.stop()
+            
             df_exog = series_energy.to_frame().join(df_weather, how="left")
             df_exog.fillna(method="ffill", inplace=True)
+            
+            # Training exogenous variables
             exog_train = df_exog.loc[str(start_date):str(end_date), exog_vars]
-            exog_forecast = df_exog.loc[str(end_date)+":", exog_vars].iloc[:forecast_horizon]
+            
+            # Forecast exogenous variables – slice safely after end_date
+            forecast_start = pd.to_datetime(end_date) + pd.Timedelta(freq)
+            exog_forecast = df_exog.loc[df_exog.index >= forecast_start, exog_vars].iloc[:forecast_horizon]
+            
+            # Safety check
+            if exog_forecast.empty:
+                st.warning("No exogenous data available for forecast. Forecast will run without exogenous variables.")
+                exog_forecast = None
+
+            status_placeholder.info("☁️ Weather data downloaded...")
+
 
         # --- Fit SARIMAX ---
         status_placeholder.info("⚙️ Training SARIMAX model...")
