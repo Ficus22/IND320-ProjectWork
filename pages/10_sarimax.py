@@ -249,11 +249,16 @@ if run_button:
             # --- Préparation de forecast_start ---
             forecast_start = pd.to_datetime(end_date) + freq_to_timedelta(freq)
             forecast_start = pd.Timestamp(forecast_start, tz='UTC')  # Force la timezone UTC
+            print("--- Debug Timezone ---")
+            print("df_exog.index est timezone-aware ?", df_exog.index.tz is not None)
+            print("Timezone de df_exog.index :", df_exog.index.tz)
+            print("Type de forecast_start :", type(forecast_start))
+            print("Timezone de forecast_start :", forecast_start.tz)
+            print("Valeur de forecast_start :", forecast_start)
+            print("Exemple de valeur dans df_exog.index :", df_exog.index[0])
+            print("Timezone de df_exog.index[0] :", df_exog.index[0].tz)
+            print("--- Fin Debug ---")
 
-            print("Type de df_exog.index:", type(df_exog.index))
-            print("Type de forecast_start:", type(forecast_start))
-            print("Valeur de forecast_start:", forecast_start)
-            print("Exemple de valeur dans df_exog.index:", df_exog.index[0])
 
             # --- Conversion de l'index de df_exog en DatetimeIndex avec timezone UTC ---
             df_exog.index = pd.to_datetime(df_exog.index).tz_localize('UTC')
