@@ -160,7 +160,9 @@ def app():
          - Reveal measurement errors, abnormal weather, or rare events
 
         SPC helps determine whether variations in weather data are part of normal behavior or represent potential outliers.
+        
         ---
+                    
         ''')
 
         year = st.number_input("Year", min_value=MIN_YEAR, max_value=MAX_YEAR, value=DEFAULT_YEAR, step=1)
@@ -202,7 +204,9 @@ def app():
         - Identify rare weather events such as extreme rain peaks or unexpected dry periods
 
         Unlike SPC, LOF does not rely on global thresholds but detects anomalies based on local behavior, making it useful for rainfall outlier detection.
+        
         ---
+                    
         ''')
 
         # Select year and contamination
