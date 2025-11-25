@@ -151,6 +151,17 @@ def app():
     # --- Tab 1: Outlier/SPC ---
     with tab1:
         st.header(f"Outlier / SPC Analysis for {city}")
+        st.markdown(''''
+        This section performs an Outlier and SPC (Statistical Process Control) Analysis on hourly weather data. SPC methods evaluate how stable the process is over time, using control charts to identify abnormal fluctuations compared to expected variability.
+
+        **Purpose of this tab :**
+            - Detect unusual values within each weather variable separately
+            - Highlight points outside statistical control limits
+            - Reveal measurement errors, abnormal weather, or rare events
+
+        SPC helps determine whether variations in weather data are part of normal behavior or represent potential outliers.
+        
+        ''')
 
         year = st.number_input("Year", min_value=MIN_YEAR, max_value=MAX_YEAR, value=DEFAULT_YEAR, step=1)
         cutoff_frequency = st.slider("DCT high-pass cutoff frequency", 0.0, 1.0, 0.01)
@@ -181,6 +192,17 @@ def app():
     # --- Tab 2: Anomaly/LOF ---
     with tab2:
         st.header(f"Anomaly Detection with LOF for {city}")
+        st.markdown(''''
+        This section applies Anomaly Detection using Local Outlier Factor (LOF), a machine-learning method that detects abnormal patterns by comparing a point to its surrounding neighborhood in a multivariate space.
+
+        **Purpose of this tab :**
+            - Detect anomalies based on combined relationships between variables
+            - Capture unusual weather events not visible in single-variable SPC charts
+            - Identify rare multivariate behaviors such as extreme humidity + wind patterns
+
+        LOF finds anomalies beyond simple threshold limits, making it well-suited for complex weather patterns.
+        
+        ''')
 
         # Select year and contamination
         year_lof = st.number_input("Year (for precipitation)", min_value=MIN_YEAR, max_value=MAX_YEAR, value=DEFAULT_YEAR, step=1)
