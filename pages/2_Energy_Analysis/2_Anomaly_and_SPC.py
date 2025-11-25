@@ -30,12 +30,6 @@ def app():
     city = PRICE_AREAS[price_area]["city"]
     st.title(f"🔍 Outliers and Anomalies for {city}")
 
-    # -------------------------
-    # Load production data
-    # -------------------------
-    df = load_mongo_data("production_data")
-    if not pd.api.types.is_datetime64_any_dtype(df["start_time"]):
-        df["start_time"] = pd.to_datetime(df["start_time"], utc=True)
 
     # -------------------------
     # Functions
@@ -67,12 +61,20 @@ def app():
             fig: Plotly Figure
             outlier_summary: dict with count, times, and values
         """
-        # High-pass filter (SATV) for SPC bounds calculation
+        # --- Separate trend and SATV (high-pass) ---
         satv = high_pass_filter(temperature_series.values, cutoff_frequency=cutoff_frequency)
-        # Calculate SPC boundaries from SATV
-        lower, upper = calculate_spc_boundaries(satv, n_std=n_std)
-        # Identify outliers on raw temperature data
-        outliers_mask = (temperature_series < lower) | (temperature_series > upper)
+        trend = temperature_series.values - satv  # estimated trend
+
+        # --- SPC boundaries are computed from SATV only ---
+        lower_satv, upper_satv = calculate_spc_boundaries(satv, n_std=n_std)
+
+        # --- Transform SATV bounds back to curves following the real data ---
+        upper_curve = trend + upper_satv
+        lower_curve = trend + lower_satv
+
+        # --- Detect outliers in SATV (NOT in raw temperature) ---
+        outliers_mask = (satv < lower_satv) | (satv > upper_satv)
+
 
         # Plot raw temperature data and SPC bounds
         fig = go.Figure()
@@ -84,19 +86,18 @@ def app():
             line=dict(color='blue')
         ))
         fig.add_trace(go.Scatter(
-            x=temperature_series.index,
-            y=[upper] * len(temperature_series),
-            mode='lines',
-            name='Upper Bound (SPC)',
+            x=temperature_series.index, 
+            y=upper_curve, 
+            name='Upper Bound',
             line=dict(color='green', dash='dash')
         ))
+        
         fig.add_trace(go.Scatter(
-            x=temperature_series.index,
-            y=[lower] * len(temperature_series),
-            mode='lines',
-            name='Lower Bound (SPC)',
+            x=temperature_series.index, 
+            y=lower_curve, name='Lower Bound',
             line=dict(color='red', dash='dash')
         ))
+
         fig.add_trace(go.Scatter(
             x=temperature_series.index[outliers_mask],
             y=temperature_series.values[outliers_mask],
@@ -123,7 +124,8 @@ def app():
         precip_array = np.asarray(precipitation)
         time_array = np.asarray(time)
         data_reshaped = precip_array.reshape(-1,1)
-        lof = LocalOutlierFactor(contamination=contamination)
+        n_neighbors = st.slider("Number of LOF neighbors", 5, 100, 20)
+        lof = LocalOutlierFactor(contamination=contamination, n_neighbors=n_neighbors)
         outlier_flags = lof.fit_predict(data_reshaped) == -1
         fig = go.Figure()
         fig.add_trace(go.Scatter(
@@ -176,20 +178,27 @@ def app():
             st.write(f"Number of outliers detected: {summary['count']}")
 
     # --- Tab 2: Anomaly/LOF ---
+    # --- Tab 2: Anomaly/LOF ---
     with tab2:
         st.header(f"Anomaly Detection with LOF for {city}")
 
-        # Get all production groups
-        groups = df["production_group"].dropna().unique()
-        selected_group_lof = st.selectbox("Select Production Group", groups, key="lof_group")
+        # Select year and contamination
+        year_lof = st.number_input("Year (for precipitation)", min_value=MIN_YEAR, max_value=MAX_YEAR, value=DEFAULT_YEAR, step=1)
         contamination = st.slider("Expected outliers (%)", 0.0, 10.0, 1.0) / 100
 
-        df_tab2 = df[(df["price_area"] == price_area) & (df["production_group"] == selected_group_lof)]
-        if df_tab2.empty:
-            st.info("No data available for this selection.")
+        # Load precipitation data
+        try:
+            df_weather = load_weather_data(price_area, year_lof)
+        except Exception as e:
+            st.error(f"Failed to load weather data: {e}")
+            st.stop()
+
+        if df_weather.empty or "precipitation" not in df_weather.columns:
+            st.error("Precipitation data not available for LOF analysis.")
         else:
-            df_tab2["start_time"] = pd.to_datetime(df_tab2["start_time"]).dt.tz_localize(None)
-            df_tab2 = df_tab2.set_index("start_time")
-            numeric_cols = df_tab2.select_dtypes(include="number").columns
-            df_tab2_resampled = df_tab2[numeric_cols].resample("H").sum().interpolate()
-            plot_precipitation_with_lof(df_tab2_resampled["quantity_kwh"], df_tab2_resampled.index, contamination=contamination)
+            df_weather["time"] = pd.to_datetime(df_weather["time"]).dt.tz_localize(None)
+            df_weather = df_weather.set_index("time")
+            precipitation_series = df_weather["precipitation"].resample("H").sum().interpolate()
+
+            # Plot LOF anomalies on precipitation
+            plot_precipitation_with_lof(precipitation_series, precipitation_series.index, contamination=contamination)
