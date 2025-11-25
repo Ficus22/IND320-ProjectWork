@@ -81,20 +81,31 @@ st.sidebar.info("IND320 Project")
 folder_list = list(pages_dict.keys())
 folder_clean_list = [clean_name(f) for f in folder_list]
 
-selected_clean = st.sidebar.selectbox("📂 Section", folder_clean_list)
-selected_folder = folder_list[folder_clean_list.index(selected_clean)]
-st.session_state["current_folder"] = selected_folder
+folder_clean_list_with_home = ["Home"] + folder_clean_list
+selected_clean = st.sidebar.selectbox("📂 Section", folder_clean_list_with_home)
+
+if selected_clean == "Home":
+    st.session_state["current_folder"] = None
+else:
+    st.session_state["current_folder"] = folder_list[folder_clean_list.index(selected_clean)]
+
 
 # ---- Page selectbox ----
-page_list = pages_dict[selected_folder]
-page_clean_list = [clean_name(f) for f in page_list]
+if st.session_state["current_folder"]:
+    page_clean_list = [clean_name(f) for f in pages_dict[st.session_state["current_folder"]]]
+    page_clean_list_with_home = ["Home"] + page_clean_list
 
-selected_page_clean = st.sidebar.selectbox(f"📄 Pages in {selected_clean}", page_clean_list)
-selected_page = page_list[page_clean_list.index(selected_page_clean)]
-st.session_state["current_page"] = selected_page
+    selected_page_clean = st.sidebar.selectbox(f"📄 Pages in {selected_clean}", page_clean_list_with_home)
+    
+    if selected_page_clean == "Home":
+        st.session_state["current_page"] = None
+    else:
+        st.session_state["current_page"] = pages_dict[st.session_state["current_folder"]][page_clean_list.index(selected_page_clean)]
+else:
+    st.session_state["current_page"] = None
 
 # ---- Load page if selected ----
-if st.session_state.get("current_page") is not None:
+if st.session_state["current_page"]:
     load_page(st.session_state["current_folder"], st.session_state["current_page"])
     st.stop()
 
