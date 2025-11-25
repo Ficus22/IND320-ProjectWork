@@ -151,13 +151,13 @@ def app():
     # --- Tab 1: Outlier/SPC ---
     with tab1:
         st.header(f"Outlier / SPC Analysis for {city}")
-        st.markdown(''''
+        st.markdown('''
         This section performs an Outlier and SPC (Statistical Process Control) Analysis on hourly weather data. SPC methods evaluate how stable the process is over time, using control charts to identify abnormal fluctuations compared to expected variability.
 
         **Purpose of this tab :**
-            - Detect unusual values within each weather variable separately
-            - Highlight points outside statistical control limits
-            - Reveal measurement errors, abnormal weather, or rare events
+        - Detect unusual values within each weather variable separately
+        - Highlight points outside statistical control limits
+         - Reveal measurement errors, abnormal weather, or rare events
 
         SPC helps determine whether variations in weather data are part of normal behavior or represent potential outliers.
         
@@ -192,16 +192,16 @@ def app():
     # --- Tab 2: Anomaly/LOF ---
     with tab2:
         st.header(f"Anomaly Detection with LOF for {city}")
-        st.markdown(''''
-        This section applies Anomaly Detection using Local Outlier Factor (LOF), a machine-learning method that detects abnormal patterns by comparing a point to its surrounding neighborhood in a multivariate space.
+        st.markdown('''
+        This section applies Anomaly Detection using Local Outlier Factor (LOF) on hourly precipitation data.  
+        LOF compares each value to its neighbors and highlights unusual spikes or drops in rainfall intensity.
 
         **Purpose of this tab :**
-            - Detect anomalies based on combined relationships between variables
-            - Capture unusual weather events not visible in single-variable SPC charts
-            - Identify rare multivariate behaviors such as extreme humidity + wind patterns
+        - Detect precipitation anomalies based on local deviations in the dataset
+        - Capture abnormal rainfall events not visible through SPC control limits alone
+        - Identify rare weather events such as extreme rain peaks or unexpected dry periods
 
-        LOF finds anomalies beyond simple threshold limits, making it well-suited for complex weather patterns.
-        
+        Unlike SPC, LOF does not rely on global thresholds but detects anomalies based on local behavior, making it useful for rainfall outlier detection.
         ''')
 
         # Select year and contamination
