@@ -129,14 +129,14 @@ def app():
         outlier_flags = lof.fit_predict(data_reshaped) == -1
         fig = go.Figure()
         fig.add_trace(go.Scatter(
-            x=time_array, y=precip_array, mode='lines', name='Production Data', line=dict(color='blue')
+            x=time_array, y=precip_array, mode='lines', name='Precipitation Data', line=dict(color='blue')
         ))
         fig.add_trace(go.Scatter(
             x=time_array[outlier_flags], y=precip_array[outlier_flags],
             mode='markers', name='LOF Anomalies', marker=dict(color='red', size=6)
         ))
         fig.update_layout(
-            title=f"Production LOF Anomalies ({contamination*100:.1f}% expected outliers)",
+            title=f"Precipitation LOF Anomalies ({contamination*100:.1f}% expected outliers)",
             xaxis_title="Time",
             yaxis_title="Quantity",
             hovermode="x unified"
@@ -177,7 +177,7 @@ def app():
             st.plotly_chart(fig, use_container_width=True)
             st.write(f"Number of outliers detected: {summary['count']}")
 
-    # --- Tab 2: Anomaly/LOF ---
+
     # --- Tab 2: Anomaly/LOF ---
     with tab2:
         st.header(f"Anomaly Detection with LOF for {city}")
