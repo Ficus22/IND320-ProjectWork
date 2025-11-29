@@ -166,7 +166,7 @@ def app():
         ''')
 
         year = st.number_input("Year", min_value=MIN_YEAR, max_value=MAX_YEAR, value=DEFAULT_YEAR, step=1)
-        cutoff_frequency = st.slider("DCT high-pass cutoff frequency", 0.0, 0.1, 0.01)
+        cutoff_frequency = st.slider("DCT high-pass cutoff frequency", min_value=0.0, max_value=0.1, value=0.01, step=0.001)
         n_std = st.number_input("SPC sensitivity (n_std)", value=3, step=1)
 
         try:
